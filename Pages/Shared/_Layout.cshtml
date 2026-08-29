@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EJLAcademy - Ambiente Virtual de Aprendizagem</title>
+    
+    <!-- Script de Inicialização Rápida de Tema (Evita FOUC) -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('ejlacademy-theme');
+            const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" />
+    
+    <style>
+        /* Menu Lateral Expansível */
+        .sidebar {
+            width: 70px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            height: 100vh;
+            background: var(--app-sidebar-bg);
+            border-right: 1px solid var(--app-border);
+            z-index: 1000;
+            transition: width 0.25s ease, background-color 0.25s ease;
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar:hover {
+            width: 290px;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+        }
+
+        .sidebar-header {
+            flex-shrink: 0;
+            padding-top: 14px;
+        }
+
+        .sidebar-nav {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 10px;
+            /* Oculta o scroll nativo quando recolhido */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            display: none;
+            width: 0px;
+        }
+
+        /* Scroll ultra-fino e moderno apenas quando o menu estiver aberto/hover */
+        .sidebar:hover .sidebar-nav {
+            scrollbar-width: thin;
+            scrollbar-color: var(--app-border) transparent;
+        }
+
+        .sidebar:hover .sidebar-nav::-webkit-scrollbar {
+            display: block;
+            width: 4px;
+        }
+
+        .sidebar:hover .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar:hover .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: var(--app-border);
+            border-radius: 9999px;
+        }
+
+        .sidebar:hover .sidebar-nav::-webkit-scrollbar-thumb:hover {
+            background-color: var(--app-text-muted);
+        }
+
+        .sidebar-footer {
+            flex-shrink: 0;
+            padding-bottom: 14px;
+            background: var(--app-sidebar-bg);
+        }
+
+        .sidebar-section-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--app-text-muted);
+            font-weight: 700;
+            padding: 8px 22px 4px 22px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .sidebar:hover .sidebar-section-title {
+            opacity: 1;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            color: var(--app-text-primary);
+            padding: 9px 22px;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+        }
+
+        .sidebar-link:hover {
+            background-color: var(--app-surface-hover);
+            color: var(--app-primary);
+        }
+
+        .sidebar-icon {
+            font-size: 1.2rem;
+            min-width: 38px;
+            color: var(--app-primary);
+        }
+
+        .sidebar-text {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .sidebar:hover .sidebar-text {
+            opacity: 1;
+            transition-delay: 0.05s;
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background-color: var(--app-border);
+            margin: 6px 16px;
+        }
+
+        /* Barra Superior */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 70px;
+            right: 0;
+            height: 70px;
+            background: var(--app-topbar-bg);
+            border-bottom: 1px solid var(--app-border);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            justify-content: space-between;
+            transition: background-color 0.25s ease, border-color 0.25s ease;
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--app-primary);
+            letter-spacing: -0.5px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .main-content {
+            margin-left: 70px;
+            margin-top: 70px;
+            padding: 35px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Menu Lateral com Navegação Completa -->
+    <div class="sidebar">
+        <!-- Topo: Logotipo / Início Fixo -->
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-link mb-1 pb-1">
+                <i class="bi bi-mortarboard-fill sidebar-icon text-primary"></i>
+                <span class="sidebar-text fw-bold text-primary">EJLAcademy AVA</span>
+            </a>
+            <div class="sidebar-divider"></div>
+        </div>
+
+        <!-- Área de Navegação com Rolagem Suave -->
+        <div class="sidebar-nav">
+            <!-- ÁREA DO ALUNO -->
+            <div class="sidebar-section-title">Portal do Aluno</div>
+
+            <a href="/" class="sidebar-link">
+                <i class="bi bi-journal-bookmark-fill sidebar-icon"></i>
+                <span class="sidebar-text">Meus Cursos</span>
+            </a>
+
+            <a href="/Planos" class="sidebar-link">
+                <i class="bi bi-stars sidebar-icon text-warning"></i>
+                <span class="sidebar-text">Planos & Assinatura</span>
+            </a>
+
+            <a href="/Biblioteca" class="sidebar-link">
+                <i class="bi bi-book-half sidebar-icon text-info"></i>
+                <span class="sidebar-text">Biblioteca Digital</span>
+            </a>
+
+            <a href="/Perfil" class="sidebar-link">
+                <i class="bi bi-person-badge-fill sidebar-icon text-success"></i>
+                <span class="sidebar-text">Meu Perfil & Certificados</span>
+            </a>
+
+            <a href="/Certificados/Validar" class="sidebar-link">
+                <i class="bi bi-shield-check sidebar-icon text-secondary"></i>
+                <span class="sidebar-text">Validar Certificado</span>
+            </a>
+
+            @if (User.IsInRole("Administrador"))
+            {
+                <div class="sidebar-divider"></div>
+
+                <!-- GESTÃO ADMINISTRATIVA -->
+                <div class="sidebar-section-title">Painel Administrativo</div>
+
+                <a href="/Admin/Dashboard" class="sidebar-link">
+                    <i class="bi bi-speedometer2 sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Dashboard AVA</span>
+                </a>
+
+                <a href="/Admin/Matriculas" class="sidebar-link">
+                    <i class="bi bi-people-fill sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Alunos & Matrículas</span>
+                </a>
+
+                <a href="/Cursos/Criar" class="sidebar-link">
+                    <i class="bi bi-journal-plus sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Novo Curso</span>
+                </a>
+
+                <a href="/Modulos/Criar" class="sidebar-link">
+                    <i class="bi bi-folder-plus sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Novo Módulo</span>
+                </a>
+
+                <a href="/Aulas/Criar" class="sidebar-link">
+                    <i class="bi bi-file-earmark-play sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Nova Aula</span>
+                </a>
+
+                <a href="/Aulas/UploadEmMassa" class="sidebar-link">
+                    <i class="bi bi-cloud-arrow-up sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Upload em Massa</span>
+                </a>
+
+                <a href="/Admin/Biblioteca" class="sidebar-link">
+                    <i class="bi bi-book sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Gestão Biblioteca</span>
+                </a>
+
+                <a href="/Admin/Planos" class="sidebar-link">
+                    <i class="bi bi-tags sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Gestão de Planos</span>
+                </a>
+
+                <a href="/Admin/Configuracoes/Pagamento" class="sidebar-link">
+                    <i class="bi bi-credit-card-2-front sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Meios de Pagamento</span>
+                </a>
+            }
+        </div>
+
+        <!-- Rodapé Fixo da Sidebar: Tema e Sair -->
+        <div class="sidebar-footer">
+            <div class="sidebar-divider mb-2"></div>
+            <!-- Botão de Tema no Menu Lateral -->
+            <button type="button" class="sidebar-link" onclick="toggleTheme()" title="Alternar Tema Claro / Escuro">
+                <i class="bi bi-sun-fill sidebar-icon theme-icon-sun"></i>
+                <i class="bi bi-moon-stars-fill sidebar-icon theme-icon-moon"></i>
+                <span class="sidebar-text theme-label-text">Modo Escuro</span>
+            </button>
+
+            <a href="/Conta/Login" class="sidebar-link text-danger">
+                <i class="bi bi-box-arrow-right sidebar-icon text-danger"></i>
+                <span class="sidebar-text fw-semibold">Sair</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra Superior -->
+    <div class="topbar">
+        <a href="/" class="brand">
+            <i class="bi bi-mortarboard-fill"></i> EJLAcademy
+        </a>
+
+        <div class="d-flex align-items-center gap-3">
+            <!-- Botão Seletor de Tema Claro / Escuro -->
+            <button type="button" class="btn-theme-toggle" onclick="toggleTheme()" title="Alternar Tema Claro / Escuro">
+                <i class="bi bi-sun-fill fs-6 theme-icon-sun"></i>
+                <i class="bi bi-moon-stars-fill fs-6 theme-icon-moon"></i>
+                <span class="theme-label-text d-none d-sm-inline">Modo Escuro</span>
+            </button>
+
+            <a href="/Planos" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold d-none d-md-inline-block">
+                <i class="bi bi-stars me-1 text-warning"></i> Assinar Plano
+            </a>
+
+            <a href="/Biblioteca" class="text-decoration-none text-muted position-relative p-2" title="Biblioteca Digital">
+                <i class="bi bi-book fs-5"></i>
+            </a>
+
+            <a href="/Perfil" class="text-decoration-none d-flex align-items-center gap-2" title="Meu Perfil">
+                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center overflow-hidden border" style="width: 38px; height: 38px;">
+                    <i class="bi bi-person-fill fs-5"></i>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Área de Conteúdo Principal -->
+    <div class="main-content">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/theme.js"></script>
+</body>
+</html>

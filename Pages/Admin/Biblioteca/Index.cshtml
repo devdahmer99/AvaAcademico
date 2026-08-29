@@ -1,0 +1,85 @@
+@page
+@model AvaAcademico.Pages.Admin.Biblioteca.IndexModel
+@{
+    ViewData["Title"] = "Gerenciar Biblioteca Digital";
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">
+            <i class="bi bi-book-half text-primary me-2"></i>Gerenciar Biblioteca Digital
+        </h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Cadastre novos livros, apostilas e materiais complementares em PDF.
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Biblioteca" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-eye me-1"></i> Ver como Aluno
+        </a>
+        <a href="/Admin/Biblioteca/Upload" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+            <i class="bi bi-cloud-arrow-up-fill me-1"></i> + Upload Novo Livro/PDF
+        </a>
+    </div>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 35%;">Título & Autor</th>
+                    <th style="width: 20%;">Categoria</th>
+                    <th style="width: 15%;">Páginas</th>
+                    <th style="width: 15%;">Data de Cadastro</th>
+                    <th style="width: 15%;" class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var livro in Model.Livros)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-pdf-fill fs-3 text-primary"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">@livro.Titulo</div>
+                                    <div class="text-muted small">Por @livro.Autor</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-primary border rounded-pill px-3 py-1">@livro.Categoria</span>
+                        </td>
+                        <td>
+                            <span class="text-muted small">@(livro.NumeroPaginas ?? 0) páginas</span>
+                        </td>
+                        <td>
+                            <span class="text-muted small">@livro.CriadoEm.ToString("dd/MM/yyyy")</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="/Biblioteca/Ler?id=@livro.Id" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3" title="Visualizar">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <form method="post" asp-page-handler="Excluir" asp-route-id="@livro.Id" onsubmit="return confirm('Deseja realmente excluir este livro?')" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

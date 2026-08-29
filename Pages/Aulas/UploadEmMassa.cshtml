@@ -1,0 +1,535 @@
+@page
+@model AvaAcademico.Pages.Aulas.UploadEmMassaModel
+@{
+    ViewData["Title"] = "Upload em Massa de Aulas";
+}
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+        <div>
+            <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">
+                <i class="bi bi-cloud-arrow-up text-primary me-2"></i>Upload em Massa de Aulas
+            </h2>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                Selecione múltiplos vídeos de uma vez para criar várias aulas com agilidade no módulo escolhido.
+            </p>
+        </div>
+        <a href="/Aulas/Criar@(Model.ModuloId.HasValue ? $"?moduloId={Model.ModuloId}" : "")" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-plus-circle me-1"></i> Cadastro Individual
+        </a>
+    </div>
+</div>
+
+<!-- Card 1: Seleção de Módulo de Destino -->
+<div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-7">
+            <label class="form-label fw-semibold text-secondary mb-1" style="font-size: 0.85rem;">
+                <i class="bi bi-folder2-open me-1 text-primary"></i> Módulo de Destino das Aulas
+            </label>
+            <select id="selectModuloDestino" class="form-select form-select-lg fs-6" required>
+                <option value="">-- Selecione o módulo onde as aulas serão adicionadas --</option>
+                @foreach (var curso in Model.CursosComModulos)
+                {
+                    <optgroup label="Curso: @curso.Titulo">
+                        @foreach (var modulo in curso.Modulos.OrderBy(m => m.Ordem))
+                        {
+                            <option value="@modulo.Id" selected="@(Model.ModuloId == modulo.Id ? "selected" : null)" data-curso="@curso.Titulo" data-modulo="@modulo.Titulo" data-ordem="@modulo.Ordem">
+                                Módulo @modulo.Ordem: @modulo.Titulo (@curso.Titulo)
+                            </option>
+                        }
+                    </optgroup>
+                }
+            </select>
+        </div>
+        <div class="col-md-5 mt-3 mt-md-0">
+            <div class="p-3 bg-light rounded-3 border">
+                <div class="small text-muted mb-1">Próxima Ordem Disponível:</div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary fs-6 px-3 py-2" id="badgeProximaOrdem">-</span>
+                    <span class="small text-muted" id="infoOrdemTexto">Selecione um módulo para carregar</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Card 2: Área de Drag & Drop de Vídeos -->
+<div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
+    <div id="dropZone" class="border border-2 border-dashed rounded-3 p-5 text-center bg-light" style="cursor: pointer; transition: all 0.2s ease;">
+        <i class="bi bi-file-earmark-play-fill text-primary" style="font-size: 3rem; opacity: 0.8;"></i>
+        <h5 class="fw-bold mt-3 mb-1 text-dark">Arraste seus vídeos aqui ou clique para selecionar</h5>
+        <p class="text-muted small mb-3">Formatos suportados: MP4, WebM, MKV, AVI (selecione um ou vários arquivos de uma vez)</p>
+        <button type="button" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold shadow-sm" onclick="document.getElementById('inputArquivos').click()">
+            <i class="bi bi-folder-plus me-1"></i> Escolher Vídeos do Computador
+        </button>
+        <input type="file" id="inputArquivos" multiple accept="video/*" class="d-none" />
+    </div>
+</div>
+
+<!-- Card 3: Lista e Configuração das Aulas Selecionadas -->
+<div id="cardListaAulas" class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4 d-none">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 pb-2 border-bottom">
+        <div>
+            <h5 class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">
+                <i class="bi bi-list-check text-primary me-2"></i>Aulas Prontas para Envio (<span id="totalArquivosBadge">0</span>)
+            </h5>
+            <span class="text-muted small" id="tamanhoTotalTexto">Tamanho total: 0 MB</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="document.getElementById('inputArquivos').click()">
+                <i class="bi bi-plus-lg me-1"></i> Adicionar Mais Vídeos
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="limparListaArquivos()">
+                <i class="bi bi-trash me-1"></i> Limpar Lista
+            </button>
+        </div>
+    </div>
+
+    <div class="alert alert-info py-2 px-3 small rounded-3 d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-info-circle-fill fs-5"></i>
+        <span>Os títulos e as ordens sequenciais foram pré-preenchidos automaticamente com base nos nomes dos arquivos. Você pode editá-los livremente antes de enviar!</span>
+    </div>
+
+    <!-- Tabela de Aulas -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tabelaAulas">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 25%;">Arquivo Original</th>
+                    <th style="width: 35%;">Título da Aula</th>
+                    <th style="width: 15%;">Ordem</th>
+                    <th style="width: 15%;">Status / Progresso</th>
+                    <th style="width: 5%;" class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="listaItensUpload">
+                <!-- Preenchido via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Barra de Progresso Geral (ativa durante o upload) -->
+    <div id="containerProgressoGeral" class="mt-4 p-3 bg-light rounded-3 border d-none">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-semibold text-primary" id="statusGeralTexto">
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                Processando envio das aulas...
+            </span>
+            <span class="fw-bold text-dark" id="porcentagemGeralTexto">0%</span>
+        </div>
+        <div class="progress" style="height: 10px;">
+            <div id="barraProgressoGeral" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+        </div>
+        <div class="d-flex justify-content-between text-muted small mt-2">
+            <span id="contadorAulasProcessadas">0 de 0 aulas concluídas</span>
+            <span id="tempoEstimadoInfo"></span>
+        </div>
+    </div>
+
+    <!-- Botão Principal de Início -->
+    <div class="mt-4 pt-2 d-flex justify-content-between align-items-center">
+        <div class="text-muted small">
+            <i class="bi bi-shield-check text-success me-1"></i> As aulas serão enviadas de forma individual e sequencial para garantir estabilidade.
+        </div>
+        <button type="button" id="btnIniciarUpload" class="btn btn-primary btn-lg px-4 py-2 fs-6 fw-bold rounded-3 shadow" onclick="iniciarUploadEmMassa()">
+            <i class="bi bi-cloud-upload-fill me-2"></i> Iniciar Upload em Massa (<span id="btnIniciarContador">0</span> aulas)
+        </button>
+    </div>
+</div>
+
+<!-- Modal / Card de Conclusão -->
+<div id="cardConclusao" class="card border-0 shadow-lg rounded-3 p-5 bg-white text-center mb-4 d-none">
+    <div class="mb-3">
+        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+    </div>
+    <h3 class="fw-bold text-dark mb-2">Upload em Massa Concluído com Sucesso!</h3>
+    <p class="text-muted mb-4" id="resumoConclusaoTexto">
+        Todas as aulas foram enviadas, vinculadas ao módulo e já estão disponíveis no sistema.
+    </p>
+    <div class="d-flex justify-content-center gap-3">
+        <button type="button" class="btn btn-outline-primary px-4 py-2 fw-semibold rounded-pill" onclick="reiniciarEnvio()">
+            <i class="bi bi-arrow-repeat me-1"></i> Fazer Outro Upload em Massa
+        </button>
+        <a href="/" id="linkIrParaCurso" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill">
+            <i class="bi bi-journal-bookmark me-1"></i> Ir para Meus Cursos
+        </a>
+    </div>
+</div>
+
+<style>
+    #dropZone.dragover {
+        background-color: #e9ecef !important;
+        border-color: #0d6efd !important;
+        transform: scale(1.01);
+    }
+</style>
+
+<script>
+    let listaArquivos = []; // Array de { file, titulo, ordem, status: 'pendente'|'enviando'|'sucesso'|'erro', progresso: 0, erroMsg: '' }
+    let proximaOrdemBase = 1;
+    let uploadEmAndamento = false;
+
+    const selectModulo = document.getElementById("selectModuloDestino");
+    const badgeProximaOrdem = document.getElementById("badgeProximaOrdem");
+    const infoOrdemTexto = document.getElementById("infoOrdemTexto");
+    const dropZone = document.getElementById("dropZone");
+    const inputArquivos = document.getElementById("inputArquivos");
+    const cardListaAulas = document.getElementById("cardListaAulas");
+    const listaItensUpload = document.getElementById("listaItensUpload");
+    const totalArquivosBadge = document.getElementById("totalArquivosBadge");
+    const btnIniciarContador = document.getElementById("btnIniciarContador");
+    const tamanhoTotalTexto = document.getElementById("tamanhoTotalTexto");
+    const btnIniciarUpload = document.getElementById("btnIniciarUpload");
+    const containerProgressoGeral = document.getElementById("containerProgressoGeral");
+    const barraProgressoGeral = document.getElementById("barraProgressoGeral");
+    const porcentagemGeralTexto = document.getElementById("porcentagemGeralTexto");
+    const statusGeralTexto = document.getElementById("statusGeralTexto");
+    const contadorAulasProcessadas = document.getElementById("contadorAulasProcessadas");
+    const cardConclusao = document.getElementById("cardConclusao");
+
+    // Limpa o nome do arquivo para sugerir um título amigável
+    function extrairTituloSugerido(nomeOriginal) {
+        let semExtensao = nomeOriginal.replace(/\.[^/.]+$/, "");
+        
+        // Remove numerações iniciais como "01 - ", "01. ", "1_", "Aula 01 - ", "Aula 1 "
+        let limpo = semExtensao.replace(/^(aula\s*\d+[\s\-_.]*|\d+[\s\-_.]*)/i, "").trim();
+        
+        // Substitui traços e underscores por espaços
+        limpo = limpo.replace(/[_-]+/g, " ").trim();
+        
+        // Se após a limpeza sobrou algo, capitaliza; senão usa o nome sem extensão
+        if (limpo.length >= 2) {
+            return limpo.charAt(0).toUpperCase() + limpo.slice(1);
+        }
+        return semExtensao;
+    }
+
+    function formatarTamanho(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    async function buscarProximaOrdemModulo(moduloId) {
+        if (!moduloId) {
+            badgeProximaOrdem.textContent = "-";
+            infoOrdemTexto.textContent = "Selecione um módulo";
+            proximaOrdemBase = 1;
+            return;
+        }
+
+        badgeProximaOrdem.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        infoOrdemTexto.textContent = "Buscando próxima ordem...";
+
+        try {
+            let res = await fetch(`?handler=UltimaOrdem&moduloId=${moduloId}`);
+            if (res.ok) {
+                let data = await res.json();
+                proximaOrdemBase = data.proximaOrdem || 1;
+                badgeProximaOrdem.textContent = `Ordem ${proximaOrdemBase}`;
+                infoOrdemTexto.textContent = `As novas aulas começarão a partir da ordem ${proximaOrdemBase}`;
+                recalcularOrdensLista();
+            }
+        } catch (e) {
+            badgeProximaOrdem.textContent = "Ordem 1";
+            proximaOrdemBase = 1;
+            infoOrdemTexto.textContent = "Iniciando a partir da ordem 1";
+        }
+    }
+
+    function recalcularOrdensLista() {
+        listaArquivos.forEach((item, index) => {
+            if (item.status === 'pendente') {
+                item.ordem = proximaOrdemBase + index;
+            }
+        });
+        renderizarTabela();
+    }
+
+    selectModulo.addEventListener("change", function () {
+        buscarProximaOrdemModulo(this.value);
+    });
+
+    // Drag and Drop
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+        });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        let files = e.dataTransfer.files;
+        adicionarArquivos(files);
+    });
+
+    inputArquivos.addEventListener('change', function () {
+        adicionarArquivos(this.files);
+        this.value = ""; // Reseta o input para permitir selecionar os mesmos arquivos novamente se quiser
+    });
+
+    function adicionarArquivos(fileList) {
+        if (!fileList || fileList.length === 0) return;
+
+        // Ordena arquivos alfabeticamente para preservar sequência natural (ex: 01.mp4, 02.mp4)
+        let filesArray = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+        filesArray.forEach(file => {
+            // Evita duplicatas exatas na fila pendente
+            const jaExiste = listaArquivos.some(item => item.file.name === file.name && item.file.size === file.size);
+            if (!jaExiste) {
+                const ordemCalculada = proximaOrdemBase + listaArquivos.length;
+                listaArquivos.push({
+                    file: file,
+                    titulo: extrairTituloSugerido(file.name),
+                    ordem: ordemCalculada,
+                    status: 'pendente', // pendente, enviando, sucesso, erro
+                    progresso: 0,
+                    erroMsg: ''
+                });
+            }
+        });
+
+        renderizarTabela();
+    }
+
+    function removerArquivo(index) {
+        if (uploadEmAndamento) return;
+        listaArquivos.splice(index, 1);
+        recalcularOrdensLista();
+    }
+
+    function limparListaArquivos() {
+        if (uploadEmAndamento) return;
+        listaArquivos = [];
+        renderizarTabela();
+    }
+
+    function renderizarTabela() {
+        if (listaArquivos.length === 0) {
+            cardListaAulas.classList.add("d-none");
+            return;
+        }
+
+        cardListaAulas.classList.remove("d-none");
+        totalArquivosBadge.textContent = listaArquivos.length;
+        btnIniciarContador.textContent = listaArquivos.length;
+
+        let tamanhoTotalBytes = listaArquivos.reduce((acc, curr) => acc + curr.file.size, 0);
+        tamanhoTotalTexto.textContent = `Tamanho total: ${formatarTamanho(tamanhoTotalBytes)}`;
+
+        listaItensUpload.innerHTML = "";
+
+        listaArquivos.forEach((item, index) => {
+            let tr = document.createElement("tr");
+            tr.id = `linha-item-${index}`;
+
+            let statusHtml = '';
+            if (item.status === 'pendente') {
+                statusHtml = '<span class="badge bg-secondary bg-opacity-10 text-secondary border">Pendente</span>';
+            } else if (item.status === 'enviando') {
+                statusHtml = `
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between small fw-semibold text-primary">
+                            <span>Enviando...</span>
+                            <span id="badge-pct-${index}">${item.progresso}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="bar-item-${index}" style="width: ${item.progresso}%"></div>
+                        </div>
+                    </div>
+                `;
+            } else if (item.status === 'sucesso') {
+                statusHtml = '<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-check2-circle me-1"></i> Enviado</span>';
+            } else if (item.status === 'erro') {
+                statusHtml = `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger" title="${item.erroMsg}"><i class="bi bi-x-circle me-1"></i> Erro</span>`;
+            }
+
+            tr.innerHTML = `
+                <td class="fw-bold text-muted">${index + 1}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-play fs-4 text-primary me-2"></i>
+                        <div class="text-truncate" style="max-width: 220px;" title="${item.file.name}">
+                            <div class="fw-semibold text-dark small text-truncate">${item.file.name}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">${formatarTamanho(item.file.size)}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" value="${item.titulo}" 
+                           onchange="listaArquivos[${index}].titulo = this.value"
+                           ${item.status !== 'pendente' ? 'disabled' : ''} 
+                           placeholder="Digite o título da aula" required />
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" style="width: 80px;" value="${item.ordem}" 
+                           onchange="listaArquivos[${index}].ordem = parseInt(this.value) || 1"
+                           ${item.status !== 'pendente' ? 'disabled' : ''} 
+                           min="1" required />
+                </td>
+                <td>${statusHtml}</td>
+                <td class="text-center">
+                    ${item.status === 'pendente' ? `
+                        <button type="button" class="btn btn-link text-danger p-0 fs-5 text-decoration-none" onclick="removerArquivo(${index})" title="Remover">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    ` : ''}
+                </td>
+            `;
+
+            listaItensUpload.appendChild(tr);
+        });
+    }
+
+    async function iniciarUploadEmMassa() {
+        const moduloId = selectModulo.value;
+        if (!moduloId) {
+            alert("Por favor, selecione um Módulo de Destino antes de iniciar o upload!");
+            selectModulo.focus();
+            return;
+        }
+
+        if (listaArquivos.length === 0) {
+            alert("Adicione pelo menos um arquivo de vídeo para enviar.");
+            return;
+        }
+
+        // Validação de títulos
+        for (let i = 0; i < listaArquivos.length; i++) {
+            if (!listaArquivos[i].titulo.trim()) {
+                alert(`O título da aula ${i + 1} (${listaArquivos[i].file.name}) não pode ficar vazio!`);
+                return;
+            }
+        }
+
+        uploadEmAndamento = true;
+        btnIniciarUpload.disabled = true;
+        selectModulo.disabled = true;
+        containerProgressoGeral.classList.remove("d-none");
+
+        let totalSucesso = 0;
+        let totalFalhas = 0;
+        const totalAulas = listaArquivos.length;
+
+        for (let i = 0; i < totalAulas; i++) {
+            const item = listaArquivos[i];
+            if (item.status === 'sucesso') {
+                totalSucesso++;
+                continue;
+            }
+
+            item.status = 'enviando';
+            item.progresso = 0;
+            renderizarTabela();
+
+            // Atualiza status geral
+            statusGeralTexto.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Enviando aula ${i + 1} de ${totalAulas}: <strong>${item.titulo}</strong>...`;
+            contadorAulasProcessadas.textContent = `${totalSucesso} de ${totalAulas} aulas concluídas`;
+
+            try {
+                await enviarArquivoComProgresso(item, moduloId, i);
+                item.status = 'sucesso';
+                item.progresso = 100;
+                totalSucesso++;
+            } catch (err) {
+                console.error("Erro ao enviar aula:", err);
+                item.status = 'erro';
+                item.erroMsg = err.message || "Erro no envio";
+                totalFalhas++;
+            }
+
+            let pctGeral = Math.round(((i + 1) / totalAulas) * 100);
+            barraProgressoGeral.style.width = `${pctGeral}%`;
+            porcentagemGeralTexto.textContent = `${pctGeral}%`;
+            renderizarTabela();
+        }
+
+        uploadEmAndamento = false;
+        btnIniciarUpload.disabled = false;
+        selectModulo.disabled = false;
+
+        if (totalSucesso === totalAulas) {
+            cardListaAulas.classList.add("d-none");
+            cardConclusao.classList.remove("d-none");
+            resumoConclusaoTexto.textContent = `Todas as ${totalSucesso} aulas foram enviadas e cadastradas com sucesso!`;
+        } else {
+            alert(`Processamento finalizado!\nSucesso: ${totalSucesso}\nFalhas: ${totalFalhas}`);
+        }
+    }
+
+    function enviarArquivoComProgresso(item, moduloId, index) {
+        return new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append("moduloId", moduloId);
+            formData.append("titulo", item.titulo);
+            formData.append("ordem", item.ordem);
+            formData.append("video", item.file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "?handler=UploadIndividual", true);
+
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    let percent = Math.round((e.loaded / e.total) * 100);
+                    item.progresso = percent;
+                    const badgePct = document.getElementById(`badge-pct-${index}`);
+                    const barItem = document.getElementById(`bar-item-${index}`);
+                    if (badgePct) badgePct.textContent = `${percent}%`;
+                    if (barItem) barItem.style.width = `${percent}%`;
+                }
+            };
+
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const resp = JSON.parse(xhr.responseText);
+                        if (resp.success) {
+                            resolve(resp);
+                        } else {
+                            reject(new Error(resp.message || "Erro retornado pelo servidor."));
+                        }
+                    } catch (e) {
+                        resolve({ success: true });
+                    }
+                } else {
+                    reject(new Error(`Erro HTTP ${xhr.status}: ${xhr.statusText}`));
+                }
+            };
+
+            xhr.onerror = function () {
+                reject(new Error("Erro de conexão de rede durante o upload."));
+            };
+
+            xhr.send(formData);
+        });
+    }
+
+    function reiniciarEnvio() {
+        listaArquivos = [];
+        cardConclusao.classList.add("d-none");
+        cardListaAulas.classList.add("d-none");
+        containerProgressoGeral.classList.add("d-none");
+        buscarProximaOrdemModulo(selectModulo.value);
+    }
+
+    // Inicialização ao carregar
+    document.addEventListener("DOMContentLoaded", function () {
+        if (selectModulo.value) {
+            buscarProximaOrdemModulo(selectModulo.value);
+        }
+    });
+</script>

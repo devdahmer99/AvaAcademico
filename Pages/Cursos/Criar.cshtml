@@ -1,0 +1,23 @@
+﻿@page
+@model AvaAcademico.Pages.Cursos.CriarModel
+
+<div class="mb-4">
+    <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">Cadastrar Novo Curso</h2>
+    <p class="text-muted mb-0" style="font-size: 0.9rem;">Preencha as informações principais para criar uma nova trilha.</p>
+</div>
+
+<div class="card border-0 shadow-sm rounded-3 p-4 bg-white" style="max-width: 800px;">
+    <form method="post">
+        <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">Título do Curso</label>
+            <input type="text" asp-for="Curso.Titulo" class="form-control" placeholder="Ex: Cibersegurança Avançada" required />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">Descrição</label>
+            <textarea asp-for="Curso.Descricao" class="form-control" rows="4" placeholder="Breve resumo sobre o conteúdo do curso..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold" style="font-size: 0.9rem;">Salvar Curso</button>
+    </form>
+</div>

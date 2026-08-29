@@ -1,0 +1,271 @@
+/* ==========================================================================
+   EJLAcademy - Sistema de Design e Temas (Claro & Escuro)
+   ========================================================================== */
+
+:root {
+    --app-bg: #f4f6f8;
+    --app-surface: #ffffff;
+    --app-surface-secondary: #f8f9fa;
+    --app-surface-hover: #f1f5f9;
+    --app-text-primary: #1e293b;
+    --app-text-secondary: #64748b;
+    --app-text-muted: #94a3b8;
+    --app-border: #e2e8f0;
+    --app-border-light: #f1f5f9;
+    --app-primary: #004ba0;
+    --app-primary-hover: #003875;
+    --app-primary-rgb: 0, 75, 160;
+    --app-sidebar-bg: #ffffff;
+    --app-topbar-bg: #ffffff;
+    --app-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --app-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-bs-theme="dark"],
+[data-theme="dark"] {
+    --app-bg: #0b1120;
+    --app-surface: #1e293b;
+    --app-surface-secondary: #0f172a;
+    --app-surface-hover: #334155;
+    --app-text-primary: #f8fafc;
+    --app-text-secondary: #94a3b8;
+    --app-text-muted: #64748b;
+    --app-border: #334155;
+    --app-border-light: #1e293b;
+    --app-primary: #3b82f6;
+    --app-primary-hover: #60a5fa;
+    --app-primary-rgb: 59, 130, 246;
+    --app-sidebar-bg: #111827;
+    --app-topbar-bg: #111827;
+    --app-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --app-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+
+    /* Bootstrap Overrides para Modo Escuro */
+    --bs-body-bg: var(--app-bg);
+    --bs-body-color: var(--app-text-primary);
+    --bs-tertiary-bg: var(--app-surface-secondary);
+    --bs-secondary-bg: var(--app-surface);
+    --bs-border-color: var(--app-border);
+}
+
+/* Transições Suaves na Troca de Tema */
+body, 
+.card, 
+.sidebar, 
+.topbar, 
+.modal-content, 
+.form-control, 
+.form-select, 
+.list-group-item,
+.accordion-button,
+.accordion-item,
+.table {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+/* Custom Scrollbar Global Fino e Moderno */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.65);
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.4);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--app-bg);
+    color: var(--app-text-primary);
+}
+
+/* ==========================================================================
+   Sobrescrita de Utilitários e Componentes em Modo Escuro
+   ========================================================================== */
+
+[data-bs-theme="dark"] .bg-white {
+    background-color: var(--app-surface) !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--app-surface-secondary) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--app-text-primary) !important;
+}
+
+[data-bs-theme="dark"] .text-secondary {
+    color: var(--app-text-secondary) !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: var(--app-text-muted) !important;
+}
+
+[data-bs-theme="dark"] .border-light,
+[data-bs-theme="dark"] .border {
+    border-color: var(--app-border) !important;
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: var(--app-surface);
+    border-color: var(--app-border) !important;
+    box-shadow: var(--app-shadow) !important;
+}
+
+[data-bs-theme="dark"] .sidebar {
+    background-color: var(--app-sidebar-bg);
+    border-right-color: var(--app-border);
+}
+
+[data-bs-theme="dark"] .sidebar-link {
+    color: #cbd5e1;
+}
+
+[data-bs-theme="dark"] .sidebar-link:hover {
+    background-color: #1e293b;
+    color: var(--app-primary);
+}
+
+[data-bs-theme="dark"] .sidebar-divider {
+    background-color: var(--app-border);
+}
+
+[data-bs-theme="dark"] .topbar {
+    background-color: var(--app-topbar-bg);
+    border-bottom-color: var(--app-border);
+}
+
+[data-bs-theme="dark"] .brand {
+    color: #60a5fa !important;
+}
+
+/* Accordions e Listas no Modo Escuro */
+[data-bs-theme="dark"] .accordion-button {
+    background-color: var(--app-surface) !important;
+    color: var(--app-text-primary) !important;
+}
+
+[data-bs-theme="dark"] .accordion-button:not(.collapsed) {
+    background-color: var(--app-surface-hover) !important;
+    color: var(--app-primary) !important;
+}
+
+[data-bs-theme="dark"] .accordion-item {
+    background-color: var(--app-surface);
+    border-color: var(--app-border);
+}
+
+[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--app-surface);
+    border-color: var(--app-border);
+    color: var(--app-text-primary);
+}
+
+[data-bs-theme="dark"] .list-group-item-action:hover {
+    background-color: var(--app-surface-hover);
+    color: var(--app-text-primary);
+}
+
+/* Formulários e Modais no Modo Escuro */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: var(--app-surface-secondary);
+    border-color: var(--app-border);
+    color: var(--app-text-primary);
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: var(--app-surface-secondary);
+    border-color: var(--app-primary);
+    color: var(--app-text-primary);
+    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: var(--app-text-muted);
+}
+
+[data-bs-theme="dark"] .modal-content {
+    background-color: var(--app-surface);
+    border: 1px solid var(--app-border);
+    color: var(--app-text-primary);
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: var(--app-surface);
+    --bs-table-color: var(--app-text-primary);
+    --bs-table-border-color: var(--app-border);
+    --bs-table-hover-bg: var(--app-surface-hover);
+}
+
+[data-bs-theme="dark"] .table-light {
+    --bs-table-bg: #1e293b;
+    --bs-table-color: var(--app-text-primary);
+    border-color: var(--app-border);
+}
+
+[data-bs-theme="dark"] .input-group-text {
+    background-color: var(--app-surface-secondary);
+    border-color: var(--app-border);
+    color: var(--app-text-secondary);
+}
+
+/* Botão de Troca de Tema */
+.btn-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--app-border);
+    background-color: var(--app-surface);
+    color: var(--app-text-primary);
+    transition: all 0.2s ease;
+}
+
+.btn-theme-toggle:hover {
+    background-color: var(--app-surface-hover);
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+}
+
+.theme-icon-sun {
+    display: none;
+    color: #f59e0b;
+}
+
+.theme-icon-moon {
+    display: inline-block;
+    color: #6366f1;
+}
+
+[data-bs-theme="dark"] .theme-icon-sun {
+    display: inline-block;
+}
+
+[data-bs-theme="dark"] .theme-icon-moon {
+    display: none;
+}

@@ -1,0 +1,248 @@
+@page
+@model AvaAcademico.Pages.Cursos.ForumModel
+@{
+    ViewData["Title"] = Model.Curso != null ? $"Fórum - {Model.Curso.Titulo}" : "Fórum de Discussões";
+}
+
+<!-- Navegação e Filtros -->
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        @if (Model.Curso != null)
+        {
+            <a href="/Cursos/Detalhes?id=@Model.Curso.Id" class="text-decoration-none text-muted fw-semibold small mb-1 d-inline-block">
+                <i class="bi bi-arrow-left me-1"></i> Voltar para as Aulas de @Model.Curso.Titulo
+            </a>
+        }
+        <h2 class="fw-bold text-dark mb-0" style="font-size: 1.5rem;">
+            <i class="bi bi-chat-left-dots-fill text-primary me-2"></i>Fórum de Discussões & Dúvidas
+        </h2>
+    </div>
+
+    <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoTopico">
+        <i class="bi bi-plus-circle me-1"></i> Criar Novo Tópico
+    </button>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["MensagemErro"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["MensagemErro"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (Model.TopicoSelecionado != null)
+{
+    <!-- VISUALIZAÇÃO DO TÓPICO SELECIONADO COM RESPOSTAS -->
+    <div class="mb-3">
+        <a href="/Cursos/Forum?cursoId=@(Model.Curso?.Id ?? Model.TopicoSelecionado.CursoId)" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Ver Todos os Tópicos do Fórum
+        </a>
+    </div>
+
+    <!-- Pergunta Principal -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+        <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+            <div class="rounded-circle overflow-hidden bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                @if (!string.IsNullOrEmpty(Model.TopicoSelecionado.Usuario?.FotoUrl))
+                {
+                    <img src="@Model.TopicoSelecionado.Usuario.FotoUrl" class="w-100 h-100 object-fit-cover" />
+                }
+                else
+                {
+                    <i class="bi bi-person-fill fs-4"></i>
+                }
+            </div>
+            <div>
+                <span class="badge bg-light text-primary border rounded-pill px-3 py-1 small fw-semibold mb-1">
+                    @(Model.TopicoSelecionado.Curso?.Titulo ?? "Curso")
+                </span>
+                <h4 class="fw-bold text-dark mb-0">@Model.TopicoSelecionado.Titulo</h4>
+                <div class="text-muted small">
+                    Postado por <strong>@(Model.TopicoSelecionado.Usuario?.NomeCompleto ?? Model.TopicoSelecionado.Usuario?.UserName ?? "Aluno")</strong> em @Model.TopicoSelecionado.CriadoEm.ToString("dd/MM/yyyy 'às' HH:mm")
+                </div>
+            </div>
+        </div>
+
+        <div class="text-secondary" style="font-size: 1rem; line-height: 1.7; white-space: pre-wrap;">@Model.TopicoSelecionado.Conteudo</div>
+    </div>
+
+    <!-- Lista de Respostas -->
+    <h5 class="fw-bold text-dark mb-3">
+        <i class="bi bi-reply-all-fill text-primary me-2"></i>Respostas (@Model.TopicoSelecionado.Respostas.Count)
+    </h5>
+
+    @if (!Model.TopicoSelecionado.Respostas.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white text-center text-muted mb-4">
+            <i class="bi bi-chat-square-text fs-2 mb-2 d-block text-muted"></i>
+            Nenhuma resposta enviada ainda. Seja o primeiro a responder e ajudar seu colega!
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3 mb-4">
+            @foreach (var resp in Model.TopicoSelecionado.Respostas.OrderBy(r => r.CriadoEm))
+            {
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle overflow-hidden bg-light d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                @if (!string.IsNullOrEmpty(resp.Usuario?.FotoUrl))
+                                {
+                                    <img src="@resp.Usuario.FotoUrl" class="w-100 h-100 object-fit-cover" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-person text-secondary"></i>
+                                }
+                            </div>
+                            <div>
+                                <span class="fw-bold text-dark small">@(resp.Usuario?.NomeCompleto ?? resp.Usuario?.UserName ?? "Aluno")</span>
+                                <span class="text-muted small ms-2">@resp.CriadoEm.ToString("dd/MM/yyyy 'às' HH:mm")</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-secondary small" style="line-height: 1.6; white-space: pre-wrap;">@resp.Conteudo</div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Formulário de Envio de Resposta -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+        <h6 class="fw-bold text-dark mb-2">Deixar uma Resposta</h6>
+        <form method="post" asp-page-handler="Responder" asp-route-topicoId="@Model.TopicoSelecionado.Id">
+            <div class="mb-3">
+                <textarea asp-for="NovaResposta.Conteudo" class="form-control" rows="4" placeholder="Escreva sua contribuição ou resposta aqui..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                <i class="bi bi-send-fill me-1"></i> Publicar Resposta
+            </button>
+        </form>
+    </div>
+}
+else
+{
+    <!-- Seletor de Curso -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold text-secondary small mb-1">Filtrar discussões por Curso / Trilha:</label>
+                <select asp-for="CursoId" class="form-select" onchange="this.form.submit()">
+                    @foreach (var c in Model.TodosCursos)
+                    {
+                        <option value="@c.Id">@c.Titulo</option>
+                    }
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- LISTAGEM GERAL DE TÓPICOS -->
+    @if (!Model.Topicos.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-4 p-5 bg-white text-center">
+            <i class="bi bi-chat-left-dots text-muted" style="font-size: 3.5rem;"></i>
+            <h5 class="fw-bold mt-3 text-dark">Nenhum tópico criado neste fórum ainda</h5>
+            <p class="text-muted small mb-4">Tem alguma dúvida ou gostaria de debater um tema com instrutores e colegas? Crie o primeiro tópico!</p>
+            <div>
+                <button type="button" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold" data-bs-toggle="modal" data-bs-target="#modalNovoTopico">
+                    <i class="bi bi-plus-circle me-1"></i> Criar Novo Tópico
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            <div class="list-group list-group-flush">
+                @foreach (var topico in Model.Topicos)
+                {
+                    <a href="/Cursos/Forum?cursoId=@topico.CursoId&topicoId=@topico.Id" class="list-group-item list-group-item-action p-4 border-light d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="rounded-circle overflow-hidden bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center mt-1" style="width: 42px; height: 42px; min-width: 42px;">
+                                @if (!string.IsNullOrEmpty(topico.Usuario?.FotoUrl))
+                                {
+                                    <img src="@topico.Usuario.FotoUrl" class="w-100 h-100 object-fit-cover" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-person-fill"></i>
+                                }
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-light text-primary border rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                                        @(topico.Curso?.Titulo ?? "Curso")
+                                    </span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1" style="font-size: 1.05rem;">@topico.Titulo</h6>
+                                <p class="text-muted small mb-1 text-truncate" style="max-width: 600px;">@topico.Conteudo</p>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    Por <strong>@(topico.Usuario?.NomeCompleto ?? topico.Usuario?.UserName ?? "Aluno")</strong> &bull; @topico.CriadoEm.ToString("dd/MM/yyyy 'às' HH:mm")
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <span class="badge bg-light text-primary border rounded-pill px-3 py-2 fw-bold">
+                                <i class="bi bi-chat-right-text me-1"></i> @topico.Respostas.Count respostas
+                            </span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+}
+
+<!-- Modal de Novo Tópico -->
+<div class="modal fade" id="modalNovoTopico" tabindex="-1" aria-labelledby="modalNovoTopicoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalNovoTopicoLabel">Criar Novo Tópico no Fórum</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="CriarTopico">
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small">Selecione o Curso / Trilha</label>
+                        <select asp-for="NovoTopico.CursoId" class="form-select" required>
+                            @foreach (var c in Model.TodosCursos)
+                            {
+                                <option value="@c.Id" selected="@(Model.CursoId == c.Id)">@c.Titulo</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small">Título da Discussão / Dúvida</label>
+                        <input type="text" asp-for="NovoTopico.Titulo" class="form-control form-control-lg fs-6" placeholder="Ex: Dúvida sobre configuração do roteador no módulo 2" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold text-secondary small">Conteúdo Detalhado</label>
+                        <textarea asp-for="NovoTopico.Conteudo" class="form-control" rows="5" placeholder="Descreva em detalhes o que você precisa ou gostaria de debater..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+                        <i class="bi bi-send-fill me-1"></i> Publicar Tópico
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,383 @@
+@page
+@model AvaAcademico.Pages.Perfil.IndexModel
+@{
+    ViewData["Title"] = "Meu Perfil Acadêmico";
+}
+
+<!-- Cabeçalho do Perfil -->
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-center gap-4">
+        <!-- Avatar com borda -->
+        <div class="position-relative">
+            <div class="rounded-circle overflow-hidden border border-3 border-primary shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                @if (!string.IsNullOrEmpty(Model.Usuario.FotoUrl))
+                {
+                    <img src="@Model.Usuario.FotoUrl" alt="Foto de Perfil" class="w-100 h-100 object-fit-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=@(Uri.EscapeDataString(Model.Usuario.NomeCompleto ?? Model.Usuario.UserName ?? "Aluno"))&background=004ba0&color=fff&size=200';" />
+                }
+                else
+                {
+                    <img src="https://ui-avatars.com/api/?name=@(Uri.EscapeDataString(Model.Usuario.NomeCompleto ?? Model.Usuario.UserName ?? "Aluno"))&background=004ba0&color=fff&size=200" alt="Avatar" class="w-100 h-100 object-fit-cover" />
+                }
+            </div>
+        </div>
+
+        <!-- Dados Principais -->
+        <div class="flex-grow-1 text-center text-md-start">
+            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
+                <h3 class="fw-bold text-dark mb-0">@(Model.Usuario.NomeCompleto ?? Model.Usuario.UserName)</h3>
+                @if (User.IsInRole("Administrador"))
+                {
+                    <span class="badge bg-danger rounded-pill px-3 py-1 fw-semibold">Administrador</span>
+                }
+                else
+                {
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 fw-semibold">Aluno</span>
+                }
+            </div>
+
+            <p class="text-muted small mb-2">
+                <i class="bi bi-envelope me-1"></i> @Model.Usuario.Email
+                @if (!string.IsNullOrEmpty(Model.Usuario.Telefone))
+                {
+                    <span class="ms-3"><i class="bi bi-telephone me-1"></i> @Model.Usuario.Telefone</span>
+                }
+            </p>
+
+            @if (!string.IsNullOrEmpty(Model.Usuario.Bio))
+            {
+                <p class="text-secondary small mb-0" style="max-width: 600px;">@Model.Usuario.Bio</p>
+            }
+        </div>
+
+        <!-- Status da Assinatura / Plano -->
+        <div class="text-center text-md-end p-3 bg-light rounded-3 border" style="min-width: 220px;">
+            <div class="text-muted small mb-1 fw-semibold">Status da Assinatura</div>
+            @if (Model.AssinaturaAtiva != null)
+            {
+                <div class="badge bg-success bg-opacity-10 text-success fs-6 px-3 py-2 rounded-pill fw-bold mb-1">
+                    <i class="bi bi-patch-check-fill me-1"></i> @Model.AssinaturaAtiva.Plano.Nome
+                </div>
+                <div class="text-muted" style="font-size: 0.75rem;">
+                    Válida até @(Model.AssinaturaAtiva.DataFim?.ToString("dd/MM/yyyy") ?? "Acesso Vitalício")
+                </div>
+            }
+            else
+            {
+                <div class="badge bg-warning bg-opacity-10 text-warning text-dark fs-6 px-3 py-2 rounded-pill fw-bold mb-2">
+                    <i class="bi bi-exclamation-triangle-fill me-1 text-warning"></i> Sem Plano Ativo
+                </div>
+                <div>
+                    <a href="/Planos" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                        <i class="bi bi-stars me-1"></i> Assinar Plano
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <div asp-validation-summary="All" class="text-danger small mb-0"></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Navegação por Abas -->
+<ul class="nav nav-pills gap-2 mb-4 bg-white p-2 rounded-4 shadow-sm border" id="perfilTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active rounded-3 fw-semibold px-4 py-2" id="tab-cursos" data-bs-toggle="pill" data-bs-target="#conteudo-cursos" type="button" role="tab">
+            <i class="bi bi-journal-bookmark-fill me-2"></i> Meus Cursos & Progresso
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-3 fw-semibold px-4 py-2" id="tab-certificados" data-bs-toggle="pill" data-bs-target="#conteudo-certificados" type="button" role="tab">
+            <i class="bi bi-award-fill me-2"></i> Certificados (@Model.CertificadosObtidos.Count)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-3 fw-semibold px-4 py-2" id="tab-editar" data-bs-toggle="pill" data-bs-target="#conteudo-editar" type="button" role="tab">
+            <i class="bi bi-person-gear me-2"></i> Dados Pessoais
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-3 fw-semibold px-4 py-2" id="tab-seguranca" data-bs-toggle="pill" data-bs-target="#conteudo-seguranca" type="button" role="tab">
+            <i class="bi bi-shield-lock-fill me-2"></i> Segurança & Senha
+        </button>
+    </li>
+</ul>
+
+<!-- Conteúdo das Abas -->
+<div class="tab-content" id="perfilTabsContent">
+
+    <!-- ABA 1: MEUS CURSOS & PROGRESSO -->
+    <div class="tab-pane fade show active" id="conteudo-cursos" role="tabpanel">
+        <!-- Métricas Rápidas -->
+        <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+            <div class="col">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white text-center">
+                    <div class="text-primary fs-3 mb-1"><i class="bi bi-journal-check"></i></div>
+                    <div class="fs-4 fw-bold text-dark">@Model.CursosMatriculados.Count</div>
+                    <div class="text-muted small">Cursos Matriculados</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white text-center">
+                    <div class="text-success fs-3 mb-1"><i class="bi bi-play-circle-fill"></i></div>
+                    <div class="fs-4 fw-bold text-dark">@Model.TotalAulasConcluidas</div>
+                    <div class="text-muted small">Aulas Concluídas</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white text-center">
+                    <div class="text-warning fs-3 mb-1"><i class="bi bi-clock-history"></i></div>
+                    <div class="fs-4 fw-bold text-dark">~@Model.HorasEstimadasEstudo h</div>
+                    <div class="text-muted small">Horas de Estudo</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white text-center">
+                    <div class="text-info fs-3 mb-1"><i class="bi bi-trophy-fill"></i></div>
+                    <div class="fs-4 fw-bold text-dark">@Model.CertificadosObtidos.Count</div>
+                    <div class="text-muted small">Certificados Conquistados</div>
+                </div>
+            </div>
+        </div>
+
+        @if (!Model.CursosMatriculados.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 bg-white text-center">
+                <i class="bi bi-mortarboard text-muted" style="font-size: 3.5rem;"></i>
+                <h5 class="fw-bold mt-3 text-dark">Você ainda não está matriculado em nenhum curso</h5>
+                <p class="text-muted small mb-4">Explore o catálogo de cursos da EJLAcademy e inicie sua jornada agora mesmo.</p>
+                <div>
+                    <a href="/" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold">
+                        <i class="bi bi-compass me-1"></i> Explorar Catálogo de Cursos
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                @foreach (var curso in Model.CursosMatriculados)
+                {
+                    <div class="col">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="fw-bold text-dark mb-0">@curso.Titulo</h5>
+                                    @if (curso.Concluido)
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 small">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Concluído
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 small">
+                                            Em Andamento
+                                        </span>
+                                    }
+                                </div>
+
+                                <p class="text-muted small mb-3 text-truncate-2">@curso.Descricao</p>
+
+                                <!-- Barra de Progresso -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between text-muted small mb-1">
+                                        <span>Progresso: <strong>@curso.AulasConcluidas de @curso.TotalAulas aulas</strong></span>
+                                        <span class="fw-bold text-primary">@curso.PercentualProgresso%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: @curso.PercentualProgresso%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 pt-3 border-top">
+                                <a href="/Cursos/Detalhes?id=@curso.CursoId" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold flex-grow-1">
+                                    <i class="bi bi-play-fill me-1"></i> Acessar Curso
+                                </a>
+                                <a href="/Cursos/Forum?cursoId=@curso.CursoId" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-medium" title="Fórum de Dúvidas">
+                                    <i class="bi bi-chat-left-dots-fill"></i> Fórum
+                                </a>
+                                @if (curso.Concluido)
+                                {
+                                    <a href="/Certificados/Emitir?cursoId=@curso.CursoId" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold">
+                                        <i class="bi bi-award-fill me-1"></i> Certificado
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- ABA 2: MEUS CERTIFICADOS -->
+    <div class="tab-pane fade" id="conteudo-certificados" role="tabpanel">
+        @if (!Model.CertificadosObtidos.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-5 bg-white text-center">
+                <i class="bi bi-award text-muted" style="font-size: 3.5rem;"></i>
+                <h5 class="fw-bold mt-3 text-dark">Nenhum certificado emitido ainda</h5>
+                <p class="text-muted small mb-4">Complete 100% das aulas de um curso para desbloquear e emitir seu certificado oficial com autenticidade.</p>
+                <div>
+                    <a href="/" class="btn btn-outline-primary px-4 py-2 rounded-pill fw-semibold">
+                        <i class="bi bi-play-circle me-1"></i> Continuar Estudando
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                @foreach (var cert in Model.CertificadosObtidos)
+                {
+                    <div class="col">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white position-relative overflow-hidden">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="bi bi-patch-check-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0">@cert.Curso.Titulo</h5>
+                                    <span class="text-muted small">Carga Horária: @cert.CargaHorariaHoras horas</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-light p-3 rounded-3 border mb-3">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Código de Autenticidade:</span>
+                                    <strong class="text-dark font-monospace">@cert.CodigoAutenticidade</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span>Emitido em:</span>
+                                    <span>@cert.DataEmissao.ToString("dd/MM/yyyy 'às' HH:mm")</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a href="/Certificados/Emitir?cursoId=@cert.CursoId" target="_blank" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold flex-grow-1">
+                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Visualizar / Imprimir PDF
+                                </a>
+                                <a href="/Certificados/Validar?codigo=@cert.CodigoAutenticidade" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Link de Validação Pública">
+                                    <i class="bi bi-shield-check"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- ABA 3: DADOS PESSOAIS -->
+    <div class="tab-pane fade" id="conteudo-editar" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="max-width: 700px;">
+            <h5 class="fw-bold text-dark mb-3">Atualizar Informações do Perfil</h5>
+            <form method="post" asp-page-handler="AtualizarPerfil" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">Nome Completo</label>
+                    <input type="text" asp-for="InputPerfil.NomeCompleto" class="form-control" placeholder="Seu nome completo" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">E-mail (Login)</label>
+                    <input type="email" value="@Model.Usuario.Email" class="form-control bg-light" readonly disabled />
+                    <span class="text-muted small">O e-mail principal é utilizado para login institucional.</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">Telefone / WhatsApp</label>
+                    <input type="text" asp-for="InputPerfil.Telefone" class="form-control" placeholder="(11) 99999-9999" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">Biografia / Resumo Profissional</label>
+                    <textarea asp-for="InputPerfil.Bio" class="form-control" rows="3" placeholder="Compartilhe um pouco sobre você e seus objetivos de aprendizado..."></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-secondary small">Alterar Foto de Perfil (Avatar)</label>
+                    <input type="file" asp-for="FotoUpload" class="form-control" accept="image/png,image/jpeg,image/webp" />
+                    <span class="text-muted small">Formatos aceitos: JPG, PNG ou WebP.</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill">
+                    <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ABA 4: SEGURANÇA & SENHA -->
+    <div class="tab-pane fade" id="conteudo-seguranca" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="max-width: 600px;">
+            <h5 class="fw-bold text-dark mb-3">Preferências de Aparência & Tema</h5>
+            <p class="text-muted small mb-3">Escolha como prefere visualizar o ambiente da EJLAcademy no seu dispositivo:</p>
+            
+            <div class="d-flex flex-column gap-2 mb-3">
+                <div class="form-check p-3 bg-light rounded-3 border d-flex align-items-center gap-3">
+                    <input class="form-check-input ms-0 mt-0" type="radio" name="radioEscolhaTema" id="radioTemaClaro" value="light" onchange="setSpecificTheme('light')">
+                    <label class="form-check-label w-100 fw-semibold text-dark mb-0 d-flex justify-content-between align-items-center" for="radioTemaClaro" style="cursor: pointer;">
+                        <span><i class="bi bi-sun-fill text-warning me-2 fs-5"></i> Modo Claro</span>
+                        <span class="badge bg-white text-muted border rounded-pill small">Padrão</span>
+                    </label>
+                </div>
+
+                <div class="form-check p-3 bg-light rounded-3 border d-flex align-items-center gap-3">
+                    <input class="form-check-input ms-0 mt-0" type="radio" name="radioEscolhaTema" id="radioTemaEscuro" value="dark" onchange="setSpecificTheme('dark')">
+                    <label class="form-check-label w-100 fw-semibold text-dark mb-0 d-flex justify-content-between align-items-center" for="radioTemaEscuro" style="cursor: pointer;">
+                        <span><i class="bi bi-moon-stars-fill text-primary me-2 fs-5"></i> Modo Escuro</span>
+                        <span class="badge bg-white text-muted border rounded-pill small">Reduz cansaço visual</span>
+                    </label>
+                </div>
+
+                <div class="form-check p-3 bg-light rounded-3 border d-flex align-items-center gap-3">
+                    <input class="form-check-input ms-0 mt-0" type="radio" name="radioEscolhaTema" id="radioTemaAuto" value="auto" onchange="setSpecificTheme('auto')">
+                    <label class="form-check-label w-100 fw-semibold text-dark mb-0 d-flex justify-content-between align-items-center" for="radioTemaAuto" style="cursor: pointer;">
+                        <span><i class="bi bi-display text-secondary me-2 fs-5"></i> Automático</span>
+                        <span class="badge bg-white text-muted border rounded-pill small">Segue o Sistema</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="max-width: 600px;">
+            <h5 class="fw-bold text-dark mb-3">Alterar Senha de Acesso</h5>
+            <form method="post" asp-page-handler="AlterarSenha">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">Senha Atual</label>
+                    <input type="password" asp-for="InputSenha.SenhaAtual" class="form-control" placeholder="••••••••" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">Nova Senha</label>
+                    <input type="password" asp-for="InputSenha.NovaSenha" class="form-control" placeholder="Mínimo de 6 caracteres" required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-secondary small">Confirmar Nova Senha</label>
+                    <input type="password" asp-for="InputSenha.ConfirmarSenha" class="form-control" placeholder="Repita a nova senha" required />
+                </div>
+
+                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill">
+                    <i class="bi bi-key-fill me-1"></i> Atualizar Senha
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>

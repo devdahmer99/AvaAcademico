@@ -1,0 +1,194 @@
+@page
+@model AvaAcademico.Pages.Assinatura.CheckoutModel
+@{
+    ViewData["Title"] = "Finalizar Assinatura";
+}
+
+<div class="mb-4">
+    <a href="/Planos" class="text-decoration-none text-muted fw-semibold small">
+        <i class="bi bi-arrow-left me-1"></i> Voltar para os Planos
+    </a>
+</div>
+
+<div class="row g-4" style="max-width: 1050px; margin: 0 auto;">
+    <!-- Coluna Esquerda: Métodos de Pagamento -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+            <h4 class="fw-bold text-dark mb-1">Pagamento Seguro</h4>
+            <p class="text-muted small mb-4">Escolha sua forma de pagamento preferida para liberar seu acesso.</p>
+
+            <!-- Seletor de Método de Pagamento -->
+            <div class="d-flex gap-3 mb-4">
+                <div class="flex-grow-1">
+                    <input type="radio" class="btn-check" name="metodoOpcao" id="metodoPix" value="Pix" checked onchange="trocarMetodo('Pix')">
+                    <label class="btn btn-outline-primary w-100 py-3 rounded-3 d-flex flex-column align-items-center gap-1 fw-bold" for="metodoPix">
+                        <i class="bi bi-qr-code-scan fs-4"></i>
+                        <span>Pix Instantâneo</span>
+                        <span class="badge bg-success bg-opacity-10 text-success small" style="font-size: 0.65rem;">Aprovação Imediata</span>
+                    </label>
+                </div>
+                <div class="flex-grow-1">
+                    <input type="radio" class="btn-check" name="metodoOpcao" id="metodoCartao" value="Cartao" onchange="trocarMetodo('Cartao')">
+                    <label class="btn btn-outline-primary w-100 py-3 rounded-3 d-flex flex-column align-items-center gap-1 fw-bold" for="metodoCartao">
+                        <i class="bi bi-credit-card-2-front fs-4"></i>
+                        <span>Cartão de Crédito</span>
+                        <span class="text-muted small" style="font-size: 0.65rem;">Até 12x</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Formulário de Confirmação -->
+            <form method="post" asp-page-handler="ConfirmarPagamento" id="formCheckout">
+                <input type="hidden" asp-for="PlanoId" />
+                <input type="hidden" asp-for="MetodoEscolhido" id="inputMetodoEscolhido" value="Pix" />
+
+                <!-- SEÇÃO PIX -->
+                <div id="secaoPix" class="text-center p-3 bg-light rounded-4 border mb-4">
+                    <div class="mb-3">
+                        <span class="badge bg-success px-3 py-1 rounded-pill small fw-bold">
+                            <i class="bi bi-lightning-charge-fill me-1"></i> QR Code Gerado
+                        </span>
+                    </div>
+
+                    <!-- QR Code Imagem -->
+                    <div class="bg-white p-3 d-inline-block rounded-3 shadow-sm border mb-3">
+                        <img src="@Model.QrCodeUrl" alt="QR Code Pix" style="width: 180px; height: 180px;" class="img-fluid" />
+                    </div>
+
+                    <div class="small text-muted mb-2">Abra o app do seu banco e escaneie o código acima, ou copie a chave abaixo:</div>
+
+                    <!-- Código Copia e Cola -->
+                    <div class="input-group mb-3" style="max-width: 480px; margin: 0 auto;">
+                        <input type="text" id="campoPixCopiaCola" class="form-control form-control-sm font-monospace text-muted" value="@Model.PixCopiaECola" readonly />
+                        <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold" onclick="copiarPix()">
+                            <i class="bi bi-clipboard me-1"></i> Copiar
+                        </button>
+                    </div>
+
+                    <div id="msgCopiado" class="text-success small fw-semibold d-none mb-2">
+                        <i class="bi bi-check2 me-1"></i> Código Pix copiado para a área de transferência!
+                    </div>
+
+                    <div class="small text-muted">
+                        <i class="bi bi-info-circle me-1"></i> O sistema confirmará automaticamente sua inscrição após o envio.
+                    </div>
+                </div>
+
+                <!-- SEÇÃO CARTÃO DE CRÉDITO -->
+                <div id="secaoCartao" class="p-3 bg-light rounded-4 border mb-4 d-none">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small">Número do Cartão</label>
+                        <div class="input-group">
+                            <input type="text" asp-for="InputCartao.NumeroCartao" class="form-control" placeholder="0000 0000 0000 0000" maxlength="19" />
+                            <span class="input-group-text bg-white"><i class="bi bi-credit-card text-muted"></i></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small">Nome Impresso no Cartão</label>
+                        <input type="text" asp-for="InputCartao.NomeTitular" class="form-control" placeholder="Como no cartão" />
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold text-secondary small">Validade</label>
+                            <input type="text" asp-for="InputCartao.Validade" class="form-control" placeholder="MM/AA" maxlength="5" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold text-secondary small">CVV</label>
+                            <input type="text" asp-for="InputCartao.CVV" class="form-control" placeholder="123" maxlength="4" />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold text-secondary small">Parcelamento</label>
+                        <select asp-for="InputCartao.Parcelas" class="form-select">
+                            <option value="1">1x de R$ @Model.Plano.Preco.ToString("N2") (sem juros)</option>
+                            <option value="2">2x de R$ @((Model.Plano.Preco / 2).ToString("N2")) (sem juros)</option>
+                            <option value="3">3x de R$ @((Model.Plano.Preco / 3).ToString("N2")) (sem juros)</option>
+                            <option value="6">6x de R$ @((Model.Plano.Preco / 6).ToString("N2")) (sem juros)</option>
+                            <option value="12">12x de R$ @((Model.Plano.Preco / 12).ToString("N2")) (sem juros)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Botão de Finalizar -->
+                <button type="submit" id="btnConfirmar" class="btn btn-success btn-lg w-100 py-3 rounded-pill fw-bold shadow">
+                    <i class="bi bi-check-circle-fill me-2"></i> Confirmar e Ativar Acesso Imediato
+                </button>
+
+                <div class="text-center text-muted small mt-3">
+                    <i class="bi bi-lock-fill text-success me-1"></i> Conexão criptografada SSL &bull; Ativação 100% segura
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Coluna Direita: Resumo do Pedido -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+            <h5 class="fw-bold text-dark mb-3">Resumo da Assinatura</h5>
+
+            <div class="p-3 bg-light rounded-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h6 class="fw-bold text-primary mb-0">@Model.Plano.Nome</h6>
+                    <span class="badge bg-primary rounded-pill">@(Model.Plano.IntervaloMeses == 1 ? "Mensal" : Model.Plano.IntervaloMeses == 12 ? "Anual" : $"{Model.Plano.IntervaloMeses} meses")</span>
+                </div>
+                <p class="text-muted small mb-0">@Model.Plano.Descricao</p>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-muted small">Valor do Plano:</span>
+                <span class="fw-semibold text-dark">R$ @Model.Plano.Preco.ToString("N2")</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-muted small">Desconto / Promoção:</span>
+                <span class="text-success small fw-semibold">Grátis (Taxa zero)</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 mb-4">
+                <span class="fw-bold text-dark">Total a Pagar:</span>
+                <div class="text-end">
+                    <div class="fw-bold text-primary fs-4">R$ @Model.Plano.Preco.ToString("N2")</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Acesso instantâneo a todos os cursos</div>
+                </div>
+            </div>
+
+            <div class="border-top pt-3">
+                <h6 class="fw-bold text-dark small mb-2">O que você receberá:</h6>
+                <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small text-secondary">
+                    <li class="d-flex gap-2 align-items-center"><i class="bi bi-check-circle-fill text-success"></i> Acesso total a todas as aulas em vídeo</li>
+                    <li class="d-flex gap-2 align-items-center"><i class="bi bi-check-circle-fill text-success"></i> Fórum do curso e suporte de dúvidas</li>
+                    <li class="d-flex gap-2 align-items-center"><i class="bi bi-check-circle-fill text-success"></i> Biblioteca digital com livros em PDF</li>
+                    <li class="d-flex gap-2 align-items-center"><i class="bi bi-check-circle-fill text-success"></i> Certificados emitidos com validação oficial</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function trocarMetodo(metodo) {
+        document.getElementById("inputMetodoEscolhido").value = metodo;
+        const secaoPix = document.getElementById("secaoPix");
+        const secaoCartao = document.getElementById("secaoCartao");
+
+        if (metodo === 'Pix') {
+            secaoPix.classList.remove("d-none");
+            secaoCartao.classList.add("d-none");
+        } else {
+            secaoPix.classList.add("d-none");
+            secaoCartao.classList.remove("d-none");
+        }
+    }
+
+    function copiarPix() {
+        const campo = document.getElementById("campoPixCopiaCola");
+        navigator.clipboard.writeText(campo.value).then(() => {
+            const msg = document.getElementById("msgCopiado");
+            msg.classList.remove("d-none");
+            setTimeout(() => msg.classList.add("d-none"), 3000);
+        });
+    }
+</script>

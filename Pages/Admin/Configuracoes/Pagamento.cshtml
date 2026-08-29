@@ -1,0 +1,136 @@
+@page
+@model AvaAcademico.Pages.Admin.Configuracoes.PagamentoModel
+@{
+    ViewData["Title"] = "Configurações de Pagamento";
+}
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h2 class="fw-bold text-dark mb-0" style="font-size: 1.5rem;">
+            <i class="bi bi-credit-card-2-front text-primary me-2"></i>Configurações de Meio de Pagamento
+        </h2>
+        <a href="/Admin/Planos" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-tags me-1"></i> Gerenciar Planos
+        </a>
+    </div>
+    <p class="text-muted mb-0" style="font-size: 0.9rem;">
+        Configure os dados de recebimento, chave Pix e credenciais de integração com gateways.
+    </p>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert" style="max-width: 900px;">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4" style="max-width: 900px;">
+    <form method="post">
+        <!-- Provedor de Pagamento -->
+        <div class="mb-4 pb-3 border-bottom">
+            <label class="form-label fw-bold text-dark mb-2">Provedor de Pagamento Ativo</label>
+            <div class="row row-cols-1 row-cols-md-3 g-3">
+                <div class="col">
+                    <div class="form-check p-3 border rounded-3 bg-light">
+                        <input class="form-check-input ms-0 me-2" type="radio" asp-for="Configuracao.ProvedorPadrao" value="PixDireto" id="provPix" checked />
+                        <label class="form-check-label fw-semibold text-dark" for="provPix">
+                            <i class="bi bi-qr-code text-primary me-1"></i> Pix Direto Institucional
+                        </label>
+                        <div class="text-muted small mt-1">Geração de QR Code e Copia e Cola instantâneo.</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-check p-3 border rounded-3 bg-light">
+                        <input class="form-check-input ms-0 me-2" type="radio" asp-for="Configuracao.ProvedorPadrao" value="MercadoPago" id="provMP" />
+                        <label class="form-check-label fw-semibold text-dark" for="provMP">
+                            <i class="bi bi-wallet2 text-info me-1"></i> Mercado Pago
+                        </label>
+                        <div class="text-muted small mt-1">Integração via API com cartões e Pix.</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-check p-3 border rounded-3 bg-light">
+                        <input class="form-check-input ms-0 me-2" type="radio" asp-for="Configuracao.ProvedorPadrao" value="Asaas" id="provAsaas" />
+                        <label class="form-check-label fw-semibold text-dark" for="provAsaas">
+                            <i class="bi bi-bank text-success me-1"></i> Asaas / Stripe
+                        </label>
+                        <div class="text-muted small mt-1">Cobranças recorrentes e gateways globais.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 1: Dados do PIX -->
+        <div class="mb-4">
+            <h5 class="fw-bold text-dark mb-3">
+                <i class="bi bi-lightning-charge text-warning me-1"></i> Dados da Chave Pix
+            </h5>
+            
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-secondary small">Tipo de Chave</label>
+                    <select asp-for="Configuracao.TipoChavePix" class="form-select">
+                        <option value="Email">E-mail</option>
+                        <option value="CPF">CPF</option>
+                        <option value="CNPJ">CNPJ</option>
+                        <option value="Telefone">Telefone / Celular</option>
+                        <option value="Aleatoria">Chave Aleatória (EVP)</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold text-secondary small">Chave Pix</label>
+                    <input type="text" asp-for="Configuracao.ChavePix" class="form-control" placeholder="exemplo@ejlacademy.com.br" required />
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label fw-semibold text-secondary small">Nome do Titular / Beneficiário</label>
+                    <input type="text" asp-for="Configuracao.NomeBeneficiarioPix" class="form-control" placeholder="EJL Academy Educacional" required />
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold text-secondary small">Cidade do Beneficiário</label>
+                    <input type="text" asp-for="Configuracao.CidadeBeneficiarioPix" class="form-control" placeholder="São Paulo" required />
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 2: Integração Gateway (Opcional) -->
+        <div class="mb-4 pt-3 border-top">
+            <h5 class="fw-bold text-dark mb-3">
+                <i class="bi bi-key-fill text-primary me-1"></i> Credenciais de API do Gateway
+            </h5>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-secondary small">Chave Pública (Public Key / Client ID)</label>
+                    <input type="text" asp-for="Configuracao.ChavePublica" class="form-control" placeholder="APP_USR-..." />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-secondary small">Chave Secreta / Token de Acesso (Access Token)</label>
+                    <input type="password" asp-for="Configuracao.ChavePrivadaToken" class="form-control" placeholder="••••••••••••••••••••" />
+                </div>
+                <div class="col-12">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" asp-for="Configuracao.ModoSandbox" id="switchSandbox" />
+                        <label class="form-check-label fw-semibold text-secondary" for="switchSandbox">
+                            Modo Sandbox / Testes (Recomendado enquanto estiver configurando)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 3: Instruções aos Alunos -->
+        <div class="mb-4 pt-3 border-top">
+            <label class="form-label fw-semibold text-secondary small">Instruções Exibidas no Checkout</label>
+            <textarea asp-for="Configuracao.InstrucoesPagamento" class="form-control" rows="3" placeholder="Orientações aos alunos no momento de finalizar a assinatura..."></textarea>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill">
+                <i class="bi bi-check-lg me-1"></i> Salvar Configurações
+            </button>
+            <a href="/" class="btn btn-light px-3 py-2 text-muted fw-medium rounded-pill">Cancelar</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,196 @@
+@page
+@model AvaAcademico.Pages.Admin.MatriculasModel
+@{
+    ViewData["Title"] = "Gestão de Matrículas & Alunos";
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">
+            <i class="bi bi-people-fill text-primary me-2"></i>Gestão de Matrículas & Progresso
+        </h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Consulte os alunos matriculados em cada curso, acompanhe a taxa de conclusão e gerencie inscrições.
+        </p>
+    </div>
+
+    <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalMatricularManual">
+        <i class="bi bi-person-plus-fill me-1"></i> + Matricular Aluno Manualmente
+    </button>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["MensagemErro"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["MensagemErro"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Filtro por Curso -->
+<div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-5">
+            <label class="form-label fw-semibold text-secondary small mb-1">Filtrar por Trilha / Curso:</label>
+            <select asp-for="CursoId" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Todos os Cursos (@Model.Matriculas.Count matrículas no total) --</option>
+                @foreach (var c in Model.Cursos)
+                {
+                    <option value="@c.Id">@c.Titulo</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3 mt-md-4">
+            @if (Model.CursoId.HasValue && Model.CursoId.Value > 0)
+            {
+                <a href="/Admin/Matriculas" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-x-circle me-1"></i> Limpar Filtro
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Tabela de Alunos Matriculados -->
+<div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+    @if (!Model.Matriculas.Any())
+    {
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-person-x fs-1 mb-2 d-block text-muted"></i>
+            Nenhuma matrícula encontrada para o filtro selecionado.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th style="width: 30%;">Aluno</th>
+                        <th style="width: 25%;">Curso</th>
+                        <th style="width: 20%;">Progresso no Curso</th>
+                        <th style="width: 15%;">Certificado</th>
+                        <th style="width: 10%;" class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var mat in Model.Matriculas)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle overflow-hidden bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; min-width: 38px;">
+                                        @if (!string.IsNullOrEmpty(mat.FotoUrl))
+                                        {
+                                            <img src="@mat.FotoUrl" class="w-100 h-100 object-fit-cover" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-person-fill"></i>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@mat.NomeAluno</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">@mat.EmailAluno &bull; Matrícula: @mat.DataMatricula.ToString("dd/MM/yyyy")</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="/Cursos/Detalhes?id=@mat.CursoId" class="text-decoration-none fw-semibold text-primary small">
+                                    @mat.TituloCurso
+                                </a>
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                                    <span>@mat.AulasConcluidas de @mat.TotalAulas aulas</span>
+                                    <span class="fw-bold text-dark">@mat.PercentualProgresso%</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 6px;">
+                                    <div class="progress-bar @(mat.PercentualProgresso == 100 ? "bg-success" : "bg-primary")" role="progressbar" style="width: @mat.PercentualProgresso%"></div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (mat.PossuiCertificado)
+                                {
+                                    <span class="badge bg-warning bg-opacity-10 text-warning text-dark fw-bold px-3 py-1 rounded-pill">
+                                        <i class="bi bi-patch-check-fill text-warning me-1"></i> Emitido
+                                    </span>
+                                }
+                                else if (mat.PercentualProgresso == 100)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-1 rounded-pill">
+                                        <i class="bi bi-unlock-fill me-1"></i> Liberado
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border rounded-pill px-3 py-1">
+                                        Em Andamento
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <form method="post" asp-page-handler="CancelarMatricula" asp-route-matriculaId="@mat.MatriculaId" onsubmit="return confirm('Deseja realmente remover esta matrícula?')" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Remover Matrícula">
+                                        <i class="bi bi-person-dash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Modal de Matrícula Manual -->
+<div class="modal fade" id="modalMatricularManual" tabindex="-1" aria-labelledby="modalMatricularManualLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalMatricularManualLabel">Matricular Aluno Manualmente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="MatricularManual">
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small">Selecione o Aluno</label>
+                        <select asp-for="NovaMatricula.UsuarioId" class="form-select" required>
+                            <option value="">-- Escolha o aluno --</option>
+                            @foreach (var aluno in Model.AlunosDisponiveis)
+                            {
+                                <option value="@aluno.Id">@(aluno.NomeCompleto ?? aluno.UserName) (@aluno.Email)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold text-secondary small">Selecione o Curso / Trilha</label>
+                        <select asp-for="NovaMatricula.CursoId" class="form-select" required>
+                            <option value="">-- Escolha o curso --</option>
+                            @foreach (var curso in Model.Cursos)
+                            {
+                                <option value="@curso.Id">@curso.Titulo</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+                        <i class="bi bi-check2-circle me-1"></i> Confirmar Matrícula
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

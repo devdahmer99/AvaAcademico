@@ -1,0 +1,197 @@
+@page
+@model AvaAcademico.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Painel Administrativo AVA";
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">
+            <i class="bi bi-speedometer2 text-primary me-2"></i>Painel Administrativo & Gestão AVA
+        </h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Acompanhe em tempo real o engajamento dos alunos, matrículas, assinaturas e acervo.
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="/Admin/Matriculas" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
+            <i class="bi bi-people-fill me-1"></i> Gestão de Matrículas
+        </a>
+        <a href="/Admin/Configuracoes/Pagamento" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+            <i class="bi bi-gear-fill me-1"></i> Meios de Pagamento
+        </a>
+    </div>
+</div>
+
+<!-- Cards de Indicadores (KPIs) -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+            <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                <i class="bi bi-people-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="fs-4 fw-bold text-dark mb-0">@Model.TotalAlunos</div>
+                <div class="text-muted small">Alunos Cadastrados</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+            <div class="rounded-3 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                <i class="bi bi-patch-check-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="fs-4 fw-bold text-dark mb-0">@Model.TotalAssinaturasAtivas</div>
+                <div class="text-muted small">Assinaturas Ativas</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+            <div class="rounded-3 bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                <i class="bi bi-mortarboard-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="fs-4 fw-bold text-dark mb-0">@Model.TotalCursos</div>
+                <div class="text-muted small">Cursos / Trilhas Ativas</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+            <div class="rounded-3 bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                <i class="bi bi-journal-bookmark-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="fs-4 fw-bold text-dark mb-0">@Model.TotalMatriculasAtivas</div>
+                <div class="text-muted small">Matrículas em Cursos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+            <div class="rounded-3 bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                <i class="bi bi-award-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="fs-4 fw-bold text-dark mb-0">@Model.TotalCertificadosEmitidos</div>
+                <div class="text-muted small">Certificados Emitidos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+            <div class="rounded-3 bg-secondary bg-opacity-10 text-secondary d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                <i class="bi bi-book-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="fs-4 fw-bold text-dark mb-0">@Model.TotalLivrosBiblioteca</div>
+                <div class="text-muted small">Livros na Biblioteca</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Rápidas -->
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+    <h5 class="fw-bold text-dark mb-3">Atalhos de Gestão Acadêmica</h5>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="/Cursos/Criar" class="btn btn-outline-primary rounded-pill px-3 fw-medium">
+            <i class="bi bi-journal-plus me-1"></i> Novo Curso
+        </a>
+        <a href="/Modulos/Criar" class="btn btn-outline-primary rounded-pill px-3 fw-medium">
+            <i class="bi bi-folder-plus me-1"></i> Novo Módulo
+        </a>
+        <a href="/Aulas/Criar" class="btn btn-outline-primary rounded-pill px-3 fw-medium">
+            <i class="bi bi-file-earmark-play me-1"></i> Nova Aula
+        </a>
+        <a href="/Aulas/UploadEmMassa" class="btn btn-primary rounded-pill px-3 fw-medium">
+            <i class="bi bi-cloud-arrow-up-fill me-1"></i> ⚡ Upload em Massa
+        </a>
+        <a href="/Admin/Biblioteca/Upload" class="btn btn-outline-secondary rounded-pill px-3 fw-medium">
+            <i class="bi bi-book me-1"></i> Subir Livro PDF
+        </a>
+        <a href="/Admin/Planos" class="btn btn-outline-secondary rounded-pill px-3 fw-medium">
+            <i class="bi bi-tags me-1"></i> Gerenciar Planos
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Últimas Matrículas -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">Últimas Matrículas Realizadas</h5>
+                <a href="/Admin/Matriculas" class="text-decoration-none small fw-semibold text-primary">Ver todas <i class="bi bi-chevron-right"></i></a>
+            </div>
+
+            @if (!Model.UltimasMatriculas.Any())
+            {
+                <div class="text-center text-muted py-4">Nenhuma matrícula registrada até o momento.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Curso</th>
+                                <th>Data</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            @foreach (var mat in Model.UltimasMatriculas)
+                            {
+                                <tr>
+                                    <td class="fw-semibold text-dark">@(mat.Usuario?.NomeCompleto ?? mat.Usuario?.UserName ?? "Aluno")</td>
+                                    <td class="text-primary">@mat.Curso?.Titulo</td>
+                                    <td class="text-muted">@mat.DataMatricula.ToString("dd/MM/yyyy")</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1">Ativa</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Atividade Recente no Fórum -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4 h-100">
+            <h5 class="fw-bold text-dark mb-3">Dúvidas Recentes no Fórum</h5>
+            @if (!Model.UltimasDuvidasForum.Any())
+            {
+                <div class="text-center text-muted py-4">Nenhum tópico criado no fórum recentemente.</div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var topico in Model.UltimasDuvidasForum)
+                    {
+                        <a href="/Cursos/Forum?cursoId=@topico.CursoId&topicoId=@topico.Id" class="list-group-item list-group-item-action px-0 py-2 border-light">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-light text-primary border rounded-pill" style="font-size: 0.65rem;">@topico.Curso?.Titulo</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">@topico.CriadoEm.ToString("dd/MM HH:mm")</span>
+                            </div>
+                            <div class="fw-semibold text-dark small text-truncate">@topico.Titulo</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                Por @(topico.Usuario?.NomeCompleto ?? topico.Usuario?.UserName) &bull; @topico.Respostas.Count respostas
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,388 @@
+@page
+@model AvaAcademico.Pages.Aulas.AssistirModel
+@{
+    ViewData["Title"] = $"{Model.AulaAtual.Titulo} - {Model.CursoAtual.Titulo}";
+}
+
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <a href="/Cursos/Detalhes?id=@Model.CursoAtual.Id" class="text-decoration-none text-muted fw-semibold" style="font-size: 0.9rem;">
+        <i class="bi bi-arrow-left me-1"></i> Voltar para o curso
+    </a>
+    <a href="/Cursos/Forum?cursoId=@Model.CursoAtual.Id" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <i class="bi bi-chat-left-dots-fill me-1"></i> Fórum do Curso
+    </a>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Alerta de Conclusão de 100% e Desbloqueio de Certificado -->
+@if (Model.Curso100PorCentoConcluido)
+{
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 p-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                <i class="bi bi-trophy-fill fs-3"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-dark mb-0">🎉 Parabéns! Você concluiu 100% das aulas deste curso!</h5>
+                <span class="text-secondary small">Seu certificado oficial de conclusão já está disponível para visualização e emissão em PDF.</span>
+            </div>
+        </div>
+        <a href="/Certificados/Emitir?cursoId=@Model.CursoAtual.Id" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm">
+            <i class="bi bi-award-fill me-1"></i> Emitir Meu Certificado
+        </a>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Player e Ações (Esquerda) -->
+    <div class="col-lg-8">
+        <div class="bg-white border border-light p-4 rounded-4 shadow-sm mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <span class="badge bg-light text-primary border rounded-pill px-3 py-1 fw-semibold small">
+                    Módulo @Model.AulaAtual.Modulo.Ordem: @Model.AulaAtual.Modulo.Titulo
+                </span>
+                <span class="text-muted small">
+                    Aula @Model.AulaAtual.Ordem &bull; Progresso do Curso: <strong>@Model.PercentualProgresso%</strong>
+                </span>
+            </div>
+
+            <h2 class="fw-bold text-dark mt-1 mb-3" style="font-size: 1.5rem;">@Model.AulaAtual.Titulo</h2>
+
+            <!-- Barra de Progresso no Curso -->
+            <div class="progress mb-4" style="height: 6px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: @Model.PercentualProgresso%"></div>
+            </div>
+
+            <!-- Player de Vídeo -->
+            <div class="ratio ratio-16x9 bg-dark rounded-3 shadow-sm overflow-hidden mb-3">
+                <video controls preload="metadata" class="w-100 h-100" id="playerPrincipal">
+                    <source src="?handler=Stream&arquivo=@Model.AulaAtual.NomeArquivoVideo" type="video/mp4">
+                    Seu navegador não suporta vídeos.
+                </video>
+            </div>
+
+            <!-- Overlay de Contagem Regressiva para Próxima Aula -->
+            @if (Model.ProximaAula != null)
+            {
+                <div id="countdownOverlay" class="card border-0 shadow-lg rounded-4 p-3 mb-3 bg-primary text-white" style="display: none;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3 text-start">
+                            <div class="spinner-border text-light" role="status" style="width: 2rem; height: 2rem;">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Aula concluída! Indo para a próxima aula em <span id="contadorSegundos" class="fs-5 fw-bold text-warning">5</span>s...</h6>
+                                <span class="text-white-50 small">Próxima aula: @Model.ProximaAula.Titulo</span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light btn-sm rounded-pill px-3 fw-semibold" onclick="cancelarAutoAvanco()">
+                                Cancelar
+                            </button>
+                            <a href="/Aulas/Assistir?id=@Model.ProximaAula.Id" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark">
+                                Avançar Agora <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Barra de Controles e Auto-Avanço -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-3">
+                <!-- Switch de Auto-Avanço -->
+                <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+                    <input class="form-check-input" type="checkbox" id="toggleAutoAvancar" role="switch" checked style="cursor: pointer;">
+                    <label class="form-check-label small fw-semibold text-secondary user-select-none" for="toggleAutoAvancar" style="cursor: pointer;">
+                        <i class="bi bi-fast-forward-circle-fill text-primary me-1"></i> Avançar automaticamente (5s)
+                    </label>
+                </div>
+
+                <!-- Botões de Navegação e Conclusão -->
+                <div class="d-flex align-items-center gap-2">
+                    @if (Model.AulaAnterior != null)
+                    {
+                        <a href="/Aulas/Assistir?id=@Model.AulaAnterior.Id" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                            <i class="bi bi-chevron-left me-1"></i> Anterior
+                        </a>
+                    }
+
+                    @if (!Model.IsConcluidaPorMim)
+                    {
+                        <form method="post" asp-page-handler="MarcarConcluida" asp-route-id="@Model.AulaAtual.Id" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-sm px-3 py-1 fw-semibold rounded-pill shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i> Marcar Concluída
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 fw-semibold rounded-pill" style="font-size: 0.85rem;">
+                            <i class="bi bi-check-circle-fill me-1"></i> Concluída
+                        </span>
+                    }
+
+                    @if (Model.ProximaAula != null)
+                    {
+                        <a href="/Aulas/Assistir?id=@Model.ProximaAula.Id" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                            Próxima <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Dúvidas da Aula (Q&A) -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-question-circle-fill text-primary me-2"></i>Dúvidas Desta Aula (@Model.Duvidas.Count)
+                </h5>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#collapseNovaDuvida">
+                    <i class="bi bi-plus-lg me-1"></i> Fazer uma Pergunta
+                </button>
+            </div>
+
+            <!-- Formulário de Nova Pergunta -->
+            <div class="collapse mb-4" id="collapseNovaDuvida">
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold text-dark mb-2">Perguntar sobre esta aula</h6>
+                    <form method="post" asp-page-handler="EnviarDuvida" asp-route-id="@Model.AulaAtual.Id">
+                        <div class="mb-3">
+                            <textarea asp-for="NovaDuvida.Pergunta" class="form-control" rows="3" placeholder="Descreva sua dúvida detalhadamente..." required></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light btn-sm rounded-pill" data-bs-toggle="collapse" data-bs-target="#collapseNovaDuvida">Cancelar</button>
+                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold">
+                                <i class="bi bi-send-fill me-1"></i> Enviar Pergunta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Dúvidas Postadas -->
+            @if (!Model.Duvidas.Any())
+            {
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-chat-square-dots fs-2 mb-2 d-block text-muted"></i>
+                    Nenhuma dúvida postada nesta aula ainda. Teve alguma dificuldade? Pergunte aqui!
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var duvida in Model.Duvidas)
+                    {
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle overflow-hidden bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        @if (!string.IsNullOrEmpty(duvida.Usuario.FotoUrl))
+                                        {
+                                            <img src="@duvida.Usuario.FotoUrl" class="w-100 h-100 object-fit-cover" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-person-fill small"></i>
+                                        }
+                                    </div>
+                                    <span class="fw-bold text-dark small">@(duvida.Usuario.NomeCompleto ?? duvida.Usuario.UserName)</span>
+                                </div>
+                                <span class="text-muted small">@duvida.CriadoEm.ToString("dd/MM/yyyy 'às' HH:mm")</span>
+                            </div>
+
+                            <p class="text-secondary small mb-3" style="line-height: 1.6; white-space: pre-wrap;">@duvida.Pergunta</p>
+
+                            <!-- Respostas da Dúvida -->
+                            @if (duvida.Respostas.Any())
+                            {
+                                <div class="ms-3 ps-3 border-start border-2 border-primary mb-3 d-flex flex-column gap-2">
+                                    @foreach (var resp in duvida.Respostas.OrderBy(r => r.CriadoEm))
+                                    {
+                                        <div class="p-2 bg-white rounded-2 shadow-xs border">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="fw-bold text-dark small" style="font-size: 0.8rem;">@(resp.Usuario.NomeCompleto ?? resp.Usuario.UserName)</span>
+                                                    @if (resp.IsInstrutorOuAdmin)
+                                                    {
+                                                        <span class="badge bg-primary rounded-pill" style="font-size: 0.65rem;">Instrutor</span>
+                                                    }
+                                                </div>
+                                                <span class="text-muted" style="font-size: 0.7rem;">@resp.CriadoEm.ToString("dd/MM/yyyy HH:mm")</span>
+                                            </div>
+                                            <div class="text-secondary small" style="font-size: 0.85rem;">@resp.Resposta</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Formulário para Responder à Dúvida -->
+                            <form method="post" asp-page-handler="ResponderDuvida" asp-route-id="@Model.AulaAtual.Id" class="mt-2">
+                                <input type="hidden" name="NovaRespostaDuvida.DuvidaId" value="@duvida.Id" />
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="NovaRespostaDuvida.Resposta" class="form-control" placeholder="Responder a esta dúvida..." required />
+                                    <button type="submit" class="btn btn-outline-primary fw-semibold">
+                                        <i class="bi bi-reply-fill"></i> Responder
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Navegação / Sidebar (Direita) -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">Conteúdo do Curso</h5>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">@Model.MinhasAulasConcluidasCount/@Model.TotalAulasCurso aulas</span>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="accordion accordion-flush" id="accordionModulos">
+                    @{
+                        var modulosOrdenados = Model.CursoAtual.Modulos.OrderBy(m => m.Ordem).ToList();
+                        int moduloIndex = 0;
+
+                        foreach (var modulo in modulosOrdenados)
+                        {
+                            string accordionId = "collapse" + moduloIndex;
+                            bool isModuloAtual = modulo.Id == Model.AulaAtual.ModuloId;
+
+                            <div class="accordion-item border-bottom">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button @(isModuloAtual ? "" : "collapsed") fw-bold bg-light text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#@accordionId" style="font-size: 0.95rem;">
+                                        @modulo.Ordem. @modulo.Titulo
+                                    </button>
+                                </h2>
+                                <div id="@accordionId" class="accordion-collapse collapse @(isModuloAtual ? "show" : "")" data-bs-parent="#accordionModulos">
+                                    <div class="list-group list-group-flush">
+                                        @{
+                                            var aulasOrdenadas = modulo.Aulas.OrderBy(a => a.Ordem).ToList();
+                                            foreach (var aula in aulasOrdenadas)
+                                            {
+                                                bool isAulaAtual = Model.AulaAtual.Id == aula.Id;
+                                                bool isConcluida = Model.AulasConcluidasIds.Contains(aula.Id);
+
+                                                <a href="/Aulas/Assistir?id=@aula.Id"
+                                                   class="list-group-item list-group-item-action py-3 px-4 border-light d-flex justify-content-between align-items-center @(isAulaAtual ? "bg-primary bg-opacity-10 border-start border-primary border-4" : "")">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="fw-semibold me-2 @(isAulaAtual ? "text-primary" : "text-muted")" style="font-size: 0.85rem;">@aula.Ordem.</span>
+                                                        <span class="@(isAulaAtual ? "fw-bold text-primary" : "text-dark")" style="font-size: 0.9rem;">@aula.Titulo</span>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        @if (isConcluida)
+                                                        {
+                                                            <i class="bi bi-check-circle-fill text-success" style="font-size: 0.95rem;"></i>
+                                                        }
+                                                        @if (isAulaAtual)
+                                                        {
+                                                            <span class="badge bg-primary rounded-pill" style="font-size: 0.65rem;">Assistindo</span>
+                                                        }
+                                                    </div>
+                                                </a>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            moduloIndex++;
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="antiForgeryForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<script>
+    const video = document.getElementById("playerPrincipal");
+    const toggleAutoAvancar = document.getElementById("toggleAutoAvancar");
+    const countdownOverlay = document.getElementById("countdownOverlay");
+    const contadorSegundos = document.getElementById("contadorSegundos");
+    const proximaAulaUrl = "@(Model.ProximaAula != null ? $"/Aulas/Assistir?id={Model.ProximaAula.Id}" : "")";
+    const aulaAtualId = @Model.AulaAtual.Id;
+
+    let timerInterval = null;
+    let segundosRestantes = 5;
+
+    // Carrega preferência persistente do aluno
+    if (localStorage.getItem("ava_auto_avancar") !== null) {
+        toggleAutoAvancar.checked = localStorage.getItem("ava_auto_avancar") === "true";
+    }
+
+    toggleAutoAvancar.addEventListener("change", function() {
+        localStorage.setItem("ava_auto_avancar", this.checked);
+        if (!this.checked) {
+            cancelarAutoAvanco();
+        }
+    });
+
+    function marcarAulaConcluidaAjax() {
+        const tokenInput = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        fetch(`?handler=MarcarConcluidaAjax&id=${aulaAtualId}`, {
+            method: "POST",
+            headers: {
+                "RequestVerificationToken": token,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        }).catch(e => console.error("Erro ao registrar conclusão automática:", e));
+    }
+
+    if (video) {
+        video.addEventListener("ended", function () {
+            // Marca a aula como concluída automaticamente
+            marcarAulaConcluidaAjax();
+
+            // Se auto-avanço estiver ativado e houver próxima aula, inicia contagem de 5s
+            if (toggleAutoAvancar.checked && proximaAulaUrl) {
+                iniciarContagemAutoAvanco();
+            }
+        });
+    }
+
+    function iniciarContagemAutoAvanco() {
+        if (!proximaAulaUrl) return;
+        segundosRestantes = 5;
+        if (contadorSegundos) contadorSegundos.innerText = segundosRestantes;
+        if (countdownOverlay) countdownOverlay.style.display = "block";
+
+        if (timerInterval) clearInterval(timerInterval);
+
+        timerInterval = setInterval(() => {
+            segundosRestantes--;
+            if (contadorSegundos) contadorSegundos.innerText = segundosRestantes;
+            if (segundosRestantes <= 0) {
+                clearInterval(timerInterval);
+                window.location.href = proximaAulaUrl;
+            }
+        }, 1000);
+    }
+
+    function cancelarAutoAvanco() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        if (countdownOverlay) {
+            countdownOverlay.style.display = "none";
+        }
+    }
+</script>

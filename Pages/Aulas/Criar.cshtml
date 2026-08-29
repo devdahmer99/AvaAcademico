@@ -1,0 +1,131 @@
+@page
+@model AvaAcademico.Pages.Aulas.CriarModel
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+        <h2 class="fw-bold text-dark mb-0" style="font-size: 1.5rem;">Cadastrar Aula e Subir Vídeo</h2>
+        <a href="/Aulas/UploadEmMassa@(Model.ModuloId.HasValue ? $"?moduloId={Model.ModuloId}" : "")" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
+            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Fazer Upload em Massa
+        </a>
+    </div>
+    <p class="text-muted mb-0" style="font-size: 0.9rem;">Envie o arquivo de vídeo e vincule à respectiva etapa.</p>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert" style="max-width: 800px;">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+            <div>
+                <strong>@TempData["MensagemSucesso"]</strong>
+                <div class="text-muted small">O módulo continua selecionado e o campo de ordem foi automaticamente atualizado para a próxima aula.</div>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-3 p-4 bg-white" style="max-width: 800px;">
+    <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">Vincular ao Módulo</label>
+            <select asp-for="Aula.ModuloId" class="form-select" id="selectModulo" required>
+                <option value="">Selecione o módulo...</option>
+                @foreach (var curso in Model.CursosComModulos)
+                {
+                    <optgroup label="Curso: @curso.Titulo">
+                        @foreach (var modulo in curso.Modulos.OrderBy(m => m.Ordem))
+                        {
+                            <option value="@modulo.Id" selected="@(Model.Aula.ModuloId == modulo.Id ? "selected" : null)">
+                                Módulo @modulo.Ordem: @modulo.Titulo
+                            </option>
+                        }
+                    </optgroup>
+                }
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">Título da Aula</label>
+            <input type="text" asp-for="Aula.Titulo" class="form-control" placeholder="Ex: Configurando o Ambiente" autofocus required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">
+                Ordem de Exibição (Número)
+                <span class="text-muted fw-normal ms-1">(calculado automaticamente)</span>
+            </label>
+            <div class="input-group">
+                <input type="number" asp-for="Aula.Ordem" class="form-control" id="inputOrdem" required />
+                <span class="input-group-text bg-light text-muted" id="loadingOrdem" style="display: none;">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                </span>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary" style="font-size: 0.85rem;">Arquivo de Vídeo</label>
+            <input type="file" asp-for="VideoUpload" id="VideoUpload" class="form-control" accept="video/mp4,video/*" required />
+        </div>
+
+        <div id="box-botao">
+            <button type="submit" id="btnSalvar" class="btn btn-primary px-4 py-2 fw-semibold" style="font-size: 0.9rem;">
+                <i class="bi bi-cloud-upload me-1"></i> Salvar e Subir Arquivo
+            </button>
+            <a href="/" class="btn btn-light px-3 py-2 text-muted fw-medium ms-2" style="font-size: 0.9rem;">Cancelar</a>
+        </div>
+
+        <div id="box-loading" class="d-none mt-3 p-3 bg-light rounded-3 border">
+            <div class="d-flex align-items-center text-primary fw-semibold" style="font-size: 0.9rem;">
+                <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                <span>Enviando vídeo para o servidor. Aguarde a conclusão...</span>
+            </div>
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%"></div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    const selectModulo = document.getElementById("selectModulo");
+    const inputOrdem = document.getElementById("inputOrdem");
+    const loadingOrdem = document.getElementById("loadingOrdem");
+
+    async function atualizarOrdemModulo(moduloId) {
+        if (!moduloId) return;
+        if (loadingOrdem) loadingOrdem.style.display = 'inline-block';
+
+        try {
+            let url = `?handler=UltimaOrdem&moduloId=${moduloId}`;
+            let response = await fetch(url);
+            if (response.ok) {
+                let data = await response.json();
+                inputOrdem.value = data.proximaOrdem;
+            }
+        } catch (e) {
+            console.error("Erro ao carregar ordem:", e);
+        } finally {
+            if (loadingOrdem) loadingOrdem.style.display = 'none';
+        }
+    }
+
+    selectModulo.addEventListener("change", function () {
+        atualizarOrdemModulo(this.value);
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (selectModulo.value && (!inputOrdem.value || inputOrdem.value === "0" || inputOrdem.value === "1")) {
+            atualizarOrdemModulo(selectModulo.value);
+        }
+    });
+
+    document.querySelector("form").addEventListener("submit", function () {
+        var videoInput = document.getElementById("VideoUpload");
+        if (videoInput.files.length > 0) {
+            document.getElementById("btnSalvar").classList.add("disabled");
+            document.getElementById("box-botao").classList.add("d-none");
+            document.getElementById("box-loading").classList.remove("d-none");
+        }
+    });
+</script>

@@ -1,0 +1,101 @@
+@page
+@model AvaAcademico.Pages.Admin.Planos.IndexModel
+@{
+    ViewData["Title"] = "Gerenciar Planos de Acesso";
+}
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h2 class="fw-bold text-dark mb-0" style="font-size: 1.5rem;">
+            <i class="bi bi-tags text-primary me-2"></i>Planos de Acesso & Assinaturas
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="/Admin/Configuracoes/Pagamento" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-gear me-1"></i> Configurar Meios de Pagamento
+            </a>
+            <a href="/Admin/Planos/Criar" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                <i class="bi bi-plus-circle me-1"></i> + Novo Plano
+            </a>
+        </div>
+    </div>
+    <p class="text-muted mb-0" style="font-size: 0.9rem;">
+        Crie e gerencie os planos de assinatura disponíveis para os alunos na plataforma.
+    </p>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%;">Nome do Plano</th>
+                    <th style="width: 15%;">Preço</th>
+                    <th style="width: 15%;">Periodicidade</th>
+                    <th style="width: 15%;">Assinantes Ativos</th>
+                    <th style="width: 15%;">Status</th>
+                    <th style="width: 15%;" class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Planos)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-dark">
+                                @item.Plano.Nome
+                                @if (item.Plano.Destaque)
+                                {
+                                    <span class="badge bg-warning text-dark rounded-pill ms-1" style="font-size: 0.65rem;">Destaque</span>
+                                }
+                            </div>
+                            <div class="text-muted small text-truncate" style="max-width: 250px;">@item.Plano.Descricao</div>
+                        </td>
+                        <td>
+                            <span class="fw-bold text-primary fs-6">R$ @item.Plano.Preco.ToString("N2")</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                @(item.Plano.IntervaloMeses == 1 ? "Mensal (1 mês)" : item.Plano.IntervaloMeses == 12 ? "Anual (12 meses)" : $"{item.Plano.IntervaloMeses} meses")
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-1 rounded-pill">
+                                <i class="bi bi-people-fill me-1"></i> @item.TotalAssinantesAtivos alunos
+                            </span>
+                        </td>
+                        <td>
+                            @if (item.Plano.Ativo)
+                            {
+                                <span class="badge bg-success text-white rounded-pill px-3 py-1">Ativo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary text-white rounded-pill px-3 py-1">Inativo</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="/Admin/Planos/Editar?id=@item.Plano.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form method="post" asp-page-handler="AlternarStatus" asp-route-id="@item.Plano.Id" class="d-inline">
+                                    <button type="submit" class="btn @(item.Plano.Ativo ? "btn-outline-warning" : "btn-outline-success") btn-sm rounded-pill px-3" title="@(item.Plano.Ativo ? "Desativar" : "Ativar")">
+                                        <i class="bi @(item.Plano.Ativo ? "bi-eye-slash" : "bi-eye")"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

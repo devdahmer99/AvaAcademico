@@ -1,0 +1,95 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Catálogo de Cursos & Trilhas";
+}
+
+<!-- Banner de Boas-Vindas e Status do Aluno -->
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <div>
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-semibold mb-2">Ambiente Virtual de Aprendizagem</span>
+            <h2 class="fw-bold text-dark mb-1" style="font-size: 1.6rem;">Trilhas de Aprendizado & Cursos</h2>
+            <p class="text-muted mb-0 small">
+                Explore as formações profissionais da EJLAcademy, assista às aulas, tire dúvidas no fórum e emita seus certificados.
+            </p>
+        </div>
+
+        <div>
+            @if (Model.AssinaturaAtiva != null)
+            {
+                <div class="d-flex align-items-center gap-2 px-3 py-2 bg-success bg-opacity-10 text-success rounded-pill border border-success border-opacity-25 shadow-xs">
+                    <i class="bi bi-patch-check-fill fs-5"></i>
+                    <div>
+                        <div class="fw-bold" style="font-size: 0.85rem;">@Model.AssinaturaAtiva.Plano.Nome</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Acesso Total Ilimitado</div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <a href="/Planos" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm">
+                    <i class="bi bi-stars me-1 text-warning"></i> Conhecer Planos de Acesso
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Catálogo de Cursos -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">
+        <i class="bi bi-mortarboard text-primary me-2"></i>Cursos Disponíveis (@Model.Cursos.Count)
+    </h5>
+    <div class="d-flex gap-2">
+        <a href="/Biblioteca" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-book-half me-1"></i> Biblioteca Digital
+        </a>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @foreach (var curso in Model.Cursos)
+    {
+        var totalAulas = curso.Modulos.SelectMany(m => m.Aulas).Count();
+        var isMatriculado = Model.CursosMatriculadosIds.Contains(curso.Id);
+
+        <div class="col">
+            <div class="card h-100 border-0 rounded-4 bg-white p-4 shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-light text-primary border rounded-pill px-3 py-1 small fw-semibold">
+                            @(curso.Categoria ?? "Tecnologia")
+                        </span>
+                        @if (isMatriculado)
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 small">
+                                <i class="bi bi-check-circle-fill me-1"></i> Matriculado
+                            </span>
+                        }
+                    </div>
+
+                    <h5 class="card-title fw-bold text-dark mb-2" style="font-size: 1.15rem;">@curso.Titulo</h5>
+                    <p class="card-text text-secondary small mb-4" style="line-height: 1.5;">@curso.Descricao</p>
+                </div>
+
+                <div class="pt-3 border-top">
+                    <div class="d-flex justify-content-between align-items-center text-muted small mb-3">
+                        <span><i class="bi bi-folder2-open me-1"></i> @curso.Modulos.Count módulos</span>
+                        <span><i class="bi bi-play-circle me-1"></i> @totalAulas aulas</span>
+                        <span><i class="bi bi-clock me-1"></i> @curso.CargaHorariaHoras h</span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a href="/Cursos/Detalhes?id=@curso.Id" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold flex-grow-1">
+                            <i class="bi bi-play-fill me-1"></i> Acessar Trilha
+                        </a>
+                        <a href="/Cursos/Forum?cursoId=@curso.Id" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Fórum de Dúvidas">
+                            <i class="bi bi-chat-left-dots-fill"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

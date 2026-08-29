@@ -1,0 +1,141 @@
+@page
+@model AvaAcademico.Pages.Biblioteca.IndexModel
+@{
+    ViewData["Title"] = "Biblioteca Virtual";
+}
+
+<!-- Cabeçalho da Biblioteca -->
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">
+            <i class="bi bi-book-half text-primary me-2"></i>Biblioteca Virtual & Acervo Digital
+        </h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Acesse apostilas oficiais, e-books e materiais complementares em PDF para aprofundar seus estudos.
+        </p>
+    </div>
+
+    @if (User.IsInRole("Administrador"))
+    {
+        <a href="/Admin/Biblioteca/Upload" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+            <i class="bi bi-cloud-arrow-up-fill me-1"></i> + Adicionar Livro / PDF
+        </a>
+    }
+</div>
+
+<!-- Barra de Pesquisa e Filtros -->
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+    <form method="get" class="row g-3 align-items-center">
+        <div class="col-md-7">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" asp-for="Busca" class="form-control border-start-0" placeholder="Buscar por título, autor ou palavra-chave..." />
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <select asp-for="Categoria" class="form-select">
+                <option value="Todas">Todas as Categorias</option>
+                @foreach (var cat in Model.Categorias)
+                {
+                    <option value="@cat">@cat</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary fw-semibold rounded-3">
+                Filtrar
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Catálogo de Livros -->
+@if (!Model.Livros.Any())
+{
+    <div class="card border-0 shadow-sm rounded-4 p-5 bg-white text-center">
+        <i class="bi bi-journal-x text-muted" style="font-size: 3.5rem;"></i>
+        <h5 class="fw-bold mt-3 text-dark">Nenhum livro ou material encontrado</h5>
+        <p class="text-muted small mb-0">Tente buscar por outros termos ou selecionar outra categoria.</p>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var livro in Model.Livros)
+        {
+            <div class="col">
+                <div class="card border-0 shadow-sm rounded-4 bg-white h-100 p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <!-- Capa / Ícone -->
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center shadow-xs" style="width: 55px; height: 75px; min-width: 55px;">
+                                <i class="bi bi-file-earmark-pdf-fill fs-2"></i>
+                            </div>
+                            <div>
+                                <span class="badge bg-light text-primary border rounded-pill px-3 py-1 small fw-semibold mb-1">
+                                    @livro.Categoria
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0 line-clamp-2" style="font-size: 1.05rem;">@livro.Titulo</h5>
+                                <div class="text-muted small">Por <strong>@livro.Autor</strong></div>
+                            </div>
+                        </div>
+
+                        <p class="text-secondary small mb-3" style="line-height: 1.5;">@livro.Descricao</p>
+                    </div>
+
+                    <div class="pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center text-muted small mb-3">
+                            <span><i class="bi bi-files me-1"></i> @(livro.NumeroPaginas ?? 100) páginas</span>
+                            <span><i class="bi bi-file-earmark me-1"></i> PDF</span>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold flex-grow-1" onclick="abrirLeitorPdf(@livro.Id, '@Html.Raw(livro.Titulo.Replace("'", "\\'"))')">
+                                <i class="bi bi-book me-1"></i> Ler Online
+                            </button>
+                            <a href="/Biblioteca/Ler?id=@livro.Id&download=true" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Baixar PDF">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Modal Leitor de PDF Embutido -->
+<div class="modal fade" id="modalLeitorPdf" tabindex="-1" aria-labelledby="modalLeitorPdfLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white py-2 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-book-half text-primary fs-5"></i>
+                    <h6 class="modal-title fw-bold mb-0" id="modalTituloLivro">Leitor de PDF</h6>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a id="btnDownloadModal" href="#" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="bi bi-download me-1"></i> Baixar Arquivo
+                    </a>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 bg-secondary">
+                <iframe id="iframePdfViewer" src="" class="w-100 h-100 border-0" style="min-height: 80vh;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirLeitorPdf(livroId, titulo) {
+        document.getElementById("modalTituloLivro").textContent = titulo;
+        document.getElementById("iframePdfViewer").src = `/Biblioteca/Ler?id=${livroId}`;
+        document.getElementById("btnDownloadModal").href = `/Biblioteca/Ler?id=${livroId}&download=true`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalLeitorPdf'));
+        modal.show();
+    }
+</script>
