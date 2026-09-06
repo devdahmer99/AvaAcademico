@@ -253,6 +253,77 @@ public static class SeedData
             lab.Writeup = "ANÁLISE TÉCNICA:\n1. Vulnerabilidade: A query de autenticação no backend concatenava strings sem parametrização.\n2. Impacto: Qualquer usuário pode assumir a identidade do administrador sem conhecer a senha.\n\nREMEDIAÇÃO DEFENSIVA:\n• Uso obrigatório de Prepared Statements (Consultas Parametrizadas) ou ORMs seguros.\n• Implementação de validação de entrada e sanitização de dados no lado servidor.";
         }
 
+        // 6. Planos de Acesso & Assinaturas VIP
+        if (!await context.Planos.AnyAsync())
+        {
+            var planoStarter = new Plano
+            {
+                Nome = "Plano Starter",
+                Descricao = "Acesso essencial aos cursos fundamentais e comunidade.",
+                Preco = 49.90m,
+                IntervaloMeses = 1,
+                Beneficios = "Acesso aos Cursos Fundamentais\nEmissão de Certificados Padrão\nAcesso ao Fórum de Dúvidas",
+                Ativo = true,
+                Destaque = false,
+                CriadoEm = DateTime.UtcNow
+            };
+
+            var planoPro = new Plano
+            {
+                Nome = "Plano Pro Cyber",
+                Descricao = "Acesso completo a todos os cursos, módulos e laboratórios hands-on.",
+                Preco = 99.90m,
+                IntervaloMeses = 12,
+                Beneficios = "Acesso Ilimitado a Todos os Cursos & Módulos\nLaboratórios Práticos Hands-on (Docker)\nCertificados Verificados com QR Code\nSuporte Prioritário com Instrutores Red Team",
+                Ativo = true,
+                Destaque = false,
+                CriadoEm = DateTime.UtcNow
+            };
+
+            var planoVipTop = new Plano
+            {
+                Nome = "Plano VIP Master Pro (Vitalício)",
+                Descricao = "Acesso VIP Vitalício Ilimitado com mentoria, containers dedicados e todos os lançamentos futuros.",
+                Preco = 1499.00m,
+                IntervaloMeses = 120,
+                Beneficios = "👑 Acesso Vitalício Ilimitado a TODO o Ecossistema\n⚡ Todos os Laboratórios Práticos & Ambientes de Attack/Defense\n🎓 Emissão Ilimitada de Certificados Profissionais\n🛡️ Mentoria Individual & Grupo Privado VIP de Red Team\n🚀 Acesso Antecipado a Todos os Novos Cursos e Ferramentas",
+                Ativo = true,
+                Destaque = true,
+                CriadoEm = DateTime.UtcNow
+            };
+
+            context.Planos.AddRange(planoStarter, planoPro, planoVipTop);
+            await context.SaveChangesAsync();
+        }
+
+        // Concede Assinatura VIP Master Pro Vitalícia para todos os usuários cadastrados
+        var planoVipMaster = await context.Planos.FirstOrDefaultAsync(p => p.Destaque || p.Nome.Contains("VIP"))
+                             ?? await context.Planos.OrderByDescending(p => p.Preco).FirstOrDefaultAsync();
+
+        if (planoVipMaster != null)
+        {
+            var todosUsuarios = await context.Users.ToListAsync();
+            foreach (var u in todosUsuarios)
+            {
+                var temAssinaturaAtiva = await context.Assinaturas.AnyAsync(a => a.UsuarioId == u.Id && a.Status == "Ativa");
+                if (!temAssinaturaAtiva)
+                {
+                    context.Assinaturas.Add(new Assinatura
+                    {
+                        UsuarioId = u.Id,
+                        PlanoId = planoVipMaster.Id,
+                        Status = "Ativa",
+                        DataInicio = DateTime.UtcNow,
+                        DataFim = DateTime.UtcNow.AddYears(10), // Acesso Vitalício
+                        MetodoPagamento = "Acesso VIP Concedido",
+                        ValorPago = planoVipMaster.Preco,
+                        CodigoTransacao = $"VIP-{Guid.NewGuid().ToString("N")[..8].ToUpper()}"
+                    });
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
         await context.SaveChangesAsync();
     }
 

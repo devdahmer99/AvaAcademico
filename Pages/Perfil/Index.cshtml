@@ -7,9 +7,9 @@
 <!-- Cabeçalho do Perfil -->
 <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
     <div class="d-flex flex-column flex-md-row align-items-center gap-4">
-        <!-- Avatar com borda -->
+        <!-- Avatar com borda e upload rápido de foto -->
         <div class="position-relative">
-            <div class="rounded-circle overflow-hidden border border-3 border-primary shadow-sm bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+            <div class="rounded-circle overflow-hidden border border-3 border-primary shadow d-flex align-items-center justify-content-center bg-light" style="width: 108px; height: 108px;">
                 @if (!string.IsNullOrEmpty(Model.Usuario.FotoUrl))
                 {
                     <img src="@Model.Usuario.FotoUrl" alt="Foto de Perfil" class="w-100 h-100 object-fit-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=@(Uri.EscapeDataString(Model.Usuario.NomeCompleto ?? Model.Usuario.UserName ?? "Aluno"))&background=004ba0&color=fff&size=200';" />
@@ -19,6 +19,17 @@
                     <img src="https://ui-avatars.com/api/?name=@(Uri.EscapeDataString(Model.Usuario.NomeCompleto ?? Model.Usuario.UserName ?? "Aluno"))&background=004ba0&color=fff&size=200" alt="Avatar" class="w-100 h-100 object-fit-cover" />
                 }
             </div>
+
+            <!-- Botão de Upload Rápido (Seletor de Foto) -->
+            <form method="post" asp-page-handler="AtualizarPerfil" enctype="multipart/form-data" id="quickAvatarForm" class="position-absolute bottom-0 end-0">
+                <input type="hidden" name="InputPerfil.NomeCompleto" value="@(Model.Usuario.NomeCompleto ?? Model.Usuario.UserName)" />
+                <input type="hidden" name="InputPerfil.Telefone" value="@Model.Usuario.Telefone" />
+                <input type="hidden" name="InputPerfil.Bio" value="@Model.Usuario.Bio" />
+                <input type="file" id="quickFotoInput" name="FotoUpload" class="d-none" accept="image/png,image/jpeg,image/webp" onchange="document.getElementById('quickAvatarForm').submit();" />
+                <label for="quickFotoInput" class="btn btn-primary rounded-circle shadow p-0 d-flex align-items-center justify-content-center border border-2 border-white" style="width: 36px; height: 36px; cursor: pointer;" title="Alterar Foto de Perfil">
+                    <i class="bi bi-camera-fill fs-6"></i>
+                </label>
+            </form>
         </div>
 
         <!-- Dados Principais -->

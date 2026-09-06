@@ -200,12 +200,37 @@ public class IndexModel : PageModel
 
     private async Task CarregarDadosAcademicosAsync(string userId)
     {
-        // 1. Assinatura ativa
+        // 1. Assinatura ativa (se não possuir, ativa o Plano VIP Master Pro Vitalício)
         AssinaturaAtiva = await _context.Assinaturas
             .Include(a => a.Plano)
             .Where(a => a.UsuarioId == userId && a.Status == "Ativa")
             .OrderByDescending(a => a.DataInicio)
             .FirstOrDefaultAsync();
+
+        if (AssinaturaAtiva == null)
+        {
+            var planoVip = await _context.Planos.FirstOrDefaultAsync(p => p.Destaque || p.Nome.Contains("VIP"))
+                ?? await _context.Planos.OrderByDescending(p => p.Preco).FirstOrDefaultAsync();
+
+            if (planoVip != null)
+            {
+                AssinaturaAtiva = new AvaAcademico.Models.Assinatura
+                {
+                    UsuarioId = userId,
+                    PlanoId = planoVip.Id,
+                    Plano = planoVip,
+                    Status = "Ativa",
+                    DataInicio = DateTime.UtcNow,
+                    DataFim = DateTime.UtcNow.AddYears(10), // Vitalício
+                    MetodoPagamento = "Acesso VIP Concedido",
+                    ValorPago = planoVip.Preco,
+                    CodigoTransacao = $"VIP-{Guid.NewGuid().ToString("N")[..8].ToUpper()}"
+                };
+
+                _context.Assinaturas.Add(AssinaturaAtiva);
+                await _context.SaveChangesAsync();
+            }
+        }
 
         // 2. Aulas concluídas
         var aulasConcluidasIds = await _context.ProgressosAulas
