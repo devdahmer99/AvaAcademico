@@ -189,32 +189,69 @@ try {
 
 # 8. Verificação do Docker Desktop e Floci (Ambiente de Laboratórios Práticos)
 Write-Host "`n[7/7] Verificando serviços de apoio (Docker Desktop & Floci)..." -ForegroundColor Cyan
-try {
-    $dockerInfo = docker info 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host " -> Docker Desktop está ativo e comunicando." -ForegroundColor Green
-        
-        # Garante a rede floci-net
-        docker network inspect floci-net 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            docker network create floci-net | Out-Null
-            Write-Host " -> Rede 'floci-net' criada." -ForegroundColor Green
-        }
 
-        # Garante contêiner floci_target
-        $flociStatus = docker ps --filter "name=floci_target" --format "{{.Status}}"
-        if (-not $flociStatus) {
-            Write-Host " -> Inicializando container floci_target..." -ForegroundColor Gray
-            docker run -d --name floci_target --restart always -p 4566:4566 --network floci-net floci/floci:latest 2>&1 | Out-Null
-            Write-Host " -> Container floci_target ativo na porta 4566!" -ForegroundColor Green
-        } else {
-            Write-Host " -> Container floci_target já está em execução ($flociStatus)." -ForegroundColor Green
+# --- Resolve Docker CLI (PATH do sistema não herda PATH do usuário ao rodar elevado) ---
+$dockerExe = Get-Command docker -ErrorAction SilentlyContinue
+if (-not $dockerExe) {
+    $candidatos = @(
+        "$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin",
+        "$env:ProgramFiles\Docker\Docker\resources\bin",
+        "${env:ProgramFiles(x86)}\Docker\Docker\resources\bin",
+        "C:\Users\Eduar\AppData\Local\Programs\DockerDesktop\resources\bin"
+    )
+    foreach ($dir in $candidatos) {
+        if (Test-Path "$dir\docker.exe") {
+            $env:PATH = "$env:PATH;$dir"
+            Write-Host " -> Docker CLI encontrado em '$dir'. Adicionado ao PATH da sessao." -ForegroundColor Gray
+
+            # Persiste no PATH do sistema para que futuras sessoes Admin tambem encontrem
+            $syspath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+            if ($syspath -notlike "*$dir*") {
+                try {
+                    [System.Environment]::SetEnvironmentVariable("PATH", "$syspath;$dir", "Machine")
+                    Write-Host " -> Docker CLI persistido no PATH do sistema permanentemente." -ForegroundColor Green
+                } catch {
+                    Write-Warning "Nao foi possivel persistir no PATH do sistema: $_"
+                }
+            }
+            break
         }
-    } else {
-        Write-Warning "Docker Desktop não está em execução no momento. Inicie-o quando for utilizar os laboratórios práticos."
     }
-} catch {
-    Write-Warning "Docker CLI não detectado no PATH do sistema."
+}
+
+$dockerExe = Get-Command docker -ErrorAction SilentlyContinue
+if (-not $dockerExe) {
+    Write-Warning "Docker CLI nao encontrado em nenhum local conhecido. Instale o Docker Desktop e reinicie o script."
+} else {
+    try {
+        $dockerInfo = docker info 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host " -> Docker Desktop esta ativo e comunicando." -ForegroundColor Green
+
+            # Garante a rede floci-net
+            docker network inspect floci-net 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                docker network create floci-net | Out-Null
+                Write-Host " -> Rede 'floci-net' criada." -ForegroundColor Green
+            } else {
+                Write-Host " -> Rede 'floci-net' ja existe." -ForegroundColor Green
+            }
+
+            # Garante conteinr floci_target
+            $flociStatus = docker ps --filter "name=floci_target" --format "{{.Status}}"
+            if (-not $flociStatus) {
+                Write-Host " -> Inicializando container floci_target..." -ForegroundColor Gray
+                docker run -d --name floci_target --restart always -p 4566:4566 --network floci-net floci/floci:latest 2>&1 | Out-Null
+                Write-Host " -> Container floci_target ativo na porta 4566!" -ForegroundColor Green
+            } else {
+                Write-Host " -> Container floci_target ja esta em execucao ($flociStatus)." -ForegroundColor Green
+            }
+        } else {
+            Write-Warning "Docker Desktop nao esta em execucao no momento. Inicie-o quando for utilizar os laboratorios praticos."
+        }
+    } catch {
+        Write-Warning "Erro ao comunicar com o Docker: $_"
+    }
 }
 
 # 9. Teste de Conectividade e Status Final
