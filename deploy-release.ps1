@@ -223,27 +223,35 @@ $dockerExe = Get-Command docker -ErrorAction SilentlyContinue
 if (-not $dockerExe) {
     Write-Warning "Docker CLI nao encontrado em nenhum local conhecido. Instale o Docker Desktop e reinicie o script."
 } else {
+    # $ErrorActionPreference = "Stop" faz comandos nativos com exit code != 0 lancarem excecao.
+    # Suspendemos localmente para poder checar $LASTEXITCODE dos comandos docker normalmente.
+    $eap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     try {
-        $dockerInfo = docker info 2>&1
+        $dockerInfo = & docker info 2>&1
         if ($LASTEXITCODE -eq 0) {
             Write-Host " -> Docker Desktop esta ativo e comunicando." -ForegroundColor Green
 
-            # Garante a rede floci-net
-            docker network inspect floci-net 2>&1 | Out-Null
+            # Garante a rede floci-net (inspeciona sem lancar excecao)
+            & docker network inspect floci-net 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) {
-                docker network create floci-net | Out-Null
-                Write-Host " -> Rede 'floci-net' criada." -ForegroundColor Green
+                & docker network create floci-net 2>&1 | Out-Null
+                Write-Host " -> Rede 'floci-net' criada com sucesso." -ForegroundColor Green
             } else {
                 Write-Host " -> Rede 'floci-net' ja existe." -ForegroundColor Green
             }
 
-            # Garante conteinr floci_target
-            $flociStatus = docker ps --filter "name=floci_target" --format "{{.Status}}"
-            if (-not $flociStatus) {
+            # Garante container floci_target
+            $flociStatus = & docker ps --filter "name=floci_target" --format "{{.Status}}" 2>&1
+            if ($LASTEXITCODE -eq 0 -and -not $flociStatus) {
                 Write-Host " -> Inicializando container floci_target..." -ForegroundColor Gray
-                docker run -d --name floci_target --restart always -p 4566:4566 --network floci-net floci/floci:latest 2>&1 | Out-Null
-                Write-Host " -> Container floci_target ativo na porta 4566!" -ForegroundColor Green
-            } else {
+                & docker run -d --name floci_target --restart always -p 4566:4566 --network floci-net floci/floci:latest 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host " -> Container floci_target ativo na porta 4566!" -ForegroundColor Green
+                } else {
+                    Write-Warning "Falha ao iniciar container floci_target. Verifique se a imagem floci/floci:latest existe."
+                }
+            } elseif ($flociStatus) {
                 Write-Host " -> Container floci_target ja esta em execucao ($flociStatus)." -ForegroundColor Green
             }
         } else {
@@ -251,6 +259,8 @@ if (-not $dockerExe) {
         }
     } catch {
         Write-Warning "Erro ao comunicar com o Docker: $_"
+    } finally {
+        $ErrorActionPreference = $eap
     }
 }
 
