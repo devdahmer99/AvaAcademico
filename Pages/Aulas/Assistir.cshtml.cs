@@ -433,17 +433,44 @@ public class AssistirModel : PageModel
         if (string.IsNullOrEmpty(arquivo)) return NotFound();
 
         string caminho;
-        if (System.IO.File.Exists(arquivo))
+
+        // Caso 1: path absoluto salvo no banco (ex: C:\Users\...\video.mp4)
+        if (System.IO.Path.IsPathRooted(arquivo))
         {
-            caminho = arquivo;
+            if (!System.IO.File.Exists(arquivo))
+            {
+                // Tenta fallback: apenas o nome do arquivo na pasta wwwroot/videos
+                var nomeArquivo = System.IO.Path.GetFileName(arquivo);
+                caminho = Path.Combine(_env.WebRootPath, "videos", nomeArquivo);
+                if (!System.IO.File.Exists(caminho))
+                {
+                    return NotFound();
+                }
+            }
+            else
+            {
+                caminho = arquivo;
+            }
         }
         else
         {
+            // Caso 2: apenas o nome do arquivo → serve de wwwroot/videos
             caminho = Path.Combine(_env.WebRootPath, "videos", arquivo);
             if (!System.IO.File.Exists(caminho)) return NotFound();
         }
 
-        return new PhysicalFileResult(caminho, "video/mp4")
+        // Detecta MIME type pela extensão
+        var ext = Path.GetExtension(caminho).ToLowerInvariant();
+        var mimeType = ext switch
+        {
+            ".mp4"  => "video/mp4",
+            ".webm" => "video/webm",
+            ".ogg"  => "video/ogg",
+            ".mov"  => "video/quicktime",
+            _       => "video/mp4"
+        };
+
+        return new PhysicalFileResult(caminho, mimeType)
         {
             EnableRangeProcessing = true
         };

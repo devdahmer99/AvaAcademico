@@ -294,6 +294,13 @@ public class DockerService : IDockerService
 
     private static async Task<(int ExitCode, string StdOut, string StdErr)> ExecutarComandoAsync(string comando, string argumentos, int timeoutMs = 30000)
     {
+        // Resolve o path absoluto do docker.exe — necessário no IIS onde o PATH
+        // do sistema não inclui a pasta de instalação do Docker Desktop
+        if (comando.Equals("docker", StringComparison.OrdinalIgnoreCase))
+        {
+            comando = ResolverDockerExe();
+        }
+
         using var process = new Process();
         process.StartInfo = new ProcessStartInfo
         {
@@ -327,6 +334,39 @@ public class DockerService : IDockerService
         {
             return (-1, string.Empty, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Resolve o caminho absoluto do docker.exe, procurando nos locais
+    /// conhecidos do Docker Desktop (necessário quando rodando no IIS,
+    /// onde o PATH do sistema não inclui a pasta do usuário).
+    /// </summary>
+    private static string ResolverDockerExe()
+    {
+        // 1. Tenta pelo PATH do processo atual (funciona no dotnet run)
+        var noPATH = Environment.GetEnvironmentVariable("PATH")?
+            .Split(Path.PathSeparator)
+            .Select(dir => Path.Combine(dir, "docker.exe"))
+            .FirstOrDefault(File.Exists);
+
+        if (noPATH != null) return noPATH;
+
+        // 2. Procura nos locais conhecidos de instalação do Docker Desktop
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var userProfile  = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+
+        var candidatos = new[]
+        {
+            Path.Combine(localAppData, "Programs", "DockerDesktop", "resources", "bin", "docker.exe"),
+            Path.Combine(userProfile,  "AppData", "Local", "Programs", "DockerDesktop", "resources", "bin", "docker.exe"),
+            Path.Combine(programFiles, "Docker", "Docker", "resources", "bin", "docker.exe"),
+            // Locais fixos como último recurso
+            @"C:\Users\Eduar\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe",
+            @"C:\Program Files\Docker\Docker\resources\bin\docker.exe"
+        };
+
+        return candidatos.FirstOrDefault(File.Exists) ?? "docker";
     }
 
     private static void TentarIniciarDockerDesktop()

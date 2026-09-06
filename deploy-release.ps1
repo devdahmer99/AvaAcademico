@@ -149,13 +149,29 @@ try {
         $acl = Get-Acl $dir
         $rule1 = New-Object System.Security.AccessControl.FileSystemAccessRule("IIS_IUSRS", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
         $rule2 = New-Object System.Security.AccessControl.FileSystemAccessRule("IUSR", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")
+        $rule3 = New-Object System.Security.AccessControl.FileSystemAccessRule("IIS APPPOOL\$AppPoolName", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")
         $acl.SetAccessRule($rule1)
         $acl.SetAccessRule($rule2)
+        $acl.SetAccessRule($rule3)
         Set-Acl -Path $dir -AclObject $acl
     }
-    Write-Host " -> Permissões de 'IIS_IUSRS' e 'IUSR' aplicadas com sucesso." -ForegroundColor Green
+    Write-Host " -> Permissões de 'IIS_IUSRS', 'IUSR' e '$AppPoolName' aplicadas com sucesso." -ForegroundColor Green
 } catch {
     Write-Warning "Aviso ao definir permissões ACL: $_"
+}
+
+# Garante acesso do AppPool à pasta de Downloads (vídeos com path absoluto no banco)
+try {
+    $pastaDownloads = [System.IO.Path]::Combine($env:USERPROFILE, "Downloads")
+    if (Test-Path $pastaDownloads) {
+        $acl = Get-Acl $pastaDownloads
+        $ruleVideos = New-Object System.Security.AccessControl.FileSystemAccessRule("IIS APPPOOL\$AppPoolName", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")
+        $acl.SetAccessRule($ruleVideos)
+        Set-Acl -Path $pastaDownloads -AclObject $acl
+        Write-Host " -> Acesso de leitura ao AppPool concedido em '$pastaDownloads' (videos)." -ForegroundColor Green
+    }
+} catch {
+    Write-Warning "Aviso ao definir permissão na pasta de Downloads: $_"
 }
 
 # 7. Provisionar AppPool e Site no IIS

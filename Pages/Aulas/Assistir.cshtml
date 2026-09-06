@@ -202,15 +202,14 @@
                     <i class="bi bi-terminal-split text-primary me-2"></i>@lab.Titulo
                 </h4>
 
-                <!-- Briefing da Operação & Regras de Engajamento -->
                 @if (!string.IsNullOrWhiteSpace(lab.CenarioBriefing))
                 {
                     <div class="p-3 mb-3 rounded-3 border" style="background-color: #f8fafc; border-left: 4px solid #3b82f6 !important;">
                         <div class="d-flex align-items-center gap-2 mb-2 text-primary fw-bold small">
-                            <i class="bi bi-journal-text fs-6"></i> BRIEFING DE OPERAÇÃO & REGRAS DE ENGAJAMENTO
+                            <i class="bi bi-journal-text fs-6"></i> BRIEFING DE OPERAÇÃO &amp; REGRAS DE ENGAJAMENTO
                         </div>
-                        <div class="text-dark small" style="white-space: pre-line; line-height: 1.6;">
-                            @lab.CenarioBriefing
+                        <div class="text-dark small" style="line-height: 1.7; font-family: inherit;">
+                            @Html.Raw(System.Text.Encodings.Web.HtmlEncoder.Default.Encode(lab.CenarioBriefing).Replace("&#xA;", "<br>").Replace("&#xD;&#xA;", "<br>").Replace("\r\n", "<br>").Replace("\n", "<br>"))
                         </div>
                     </div>
                 }
