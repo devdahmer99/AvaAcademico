@@ -204,19 +204,19 @@
 
                 @if (!string.IsNullOrWhiteSpace(lab.CenarioBriefing))
                 {
-                    <div class="p-3 mb-3 rounded-3 border" style="background-color: #f8fafc; border-left: 4px solid #3b82f6 !important;">
+                    <div class="p-3 mb-3 rounded-3 border bg-light" style="border-left: 4px solid #3b82f6 !important;">
                         <div class="d-flex align-items-center gap-2 mb-2 text-primary fw-bold small">
                             <i class="bi bi-journal-text fs-6"></i> BRIEFING DE OPERAÇÃO &amp; REGRAS DE ENGAJAMENTO
                         </div>
-                        <div class="text-dark small" style="line-height: 1.7; font-family: inherit;">
-                            @Html.Raw(System.Text.Encodings.Web.HtmlEncoder.Default.Encode(lab.CenarioBriefing).Replace("&#xA;", "<br>").Replace("&#xD;&#xA;", "<br>").Replace("\r\n", "<br>").Replace("\n", "<br>"))
+                        <div class="small" style="line-height: 1.7; font-family: inherit; color: var(--app-text-primary);">
+                            @Html.Raw(System.Net.WebUtility.HtmlEncode(lab.CenarioBriefing).Replace("\r\n", "<br>").Replace("\n", "<br>"))
                         </div>
                     </div>
                 }
                 else if (!string.IsNullOrWhiteSpace(lab.Descricao))
                 {
-                    <div class="text-secondary small mb-3 p-3 bg-light rounded-3 border" style="white-space: pre-line; line-height: 1.6;">
-                        @lab.Descricao
+                    <div class="small mb-3 p-3 bg-light rounded-3 border" style="line-height: 1.6; color: var(--app-text-primary);">
+                        @Html.Raw(System.Net.WebUtility.HtmlEncode(lab.Descricao).Replace("\r\n", "<br>").Replace("\n", "<br>"))
                     </div>
                 }
 
@@ -378,7 +378,7 @@
                                 </div>
                                 <span class="badge bg-success text-white rounded-pill px-3 py-1 small">Desbloqueado</span>
                             </div>
-                            <div class="small text-dark" style="white-space: pre-line; line-height: 1.6;">
+                            <div class="small" style="white-space: pre-line; line-height: 1.6; color: var(--app-text-primary);">
                                 @lab.Writeup
                             </div>
                         </div>
