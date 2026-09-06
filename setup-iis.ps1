@@ -16,7 +16,7 @@ Write-Host " Configurando EJLAcademy AVA no IIS (Hospedagem 24/7) " -ForegroundC
 Write-Host "=====================================================" -ForegroundColor Cyan
 
 # 2. Configurações de Diretório e IIS
-$ProjectDir   = "C:\AvaAcademico"
+$ProjectDir   = if (Test-Path "$PSScriptRoot\AvaAcademico.csproj") { $PSScriptRoot } else { "C:\Projetos_github\AvaAcademico" }
 $PublishDir   = "C:\inetpub\wwwroot\AvaAcademico"
 $AppPoolName  = "AvaAcademicoAppPool"
 $SiteName     = "AvaAcademico"

@@ -13,6 +13,15 @@ namespace AvaAcademico.Migrations
         {
             migrationBuilder.AlterColumn<string>(
                 name: "Titulo",
+                table: "Modulos",
+                type: "nvarchar(150)",
+                maxLength: 150,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Titulo",
                 table: "Cursos",
                 type: "nvarchar(150)",
                 maxLength: 150,
@@ -90,6 +99,26 @@ namespace AvaAcademico.Migrations
                 table: "AspNetUsers",
                 type: "nvarchar(max)",
                 nullable: true);
+
+            migrationBuilder.CreateTable(
+                name: "AvaPlanos",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Preco = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    IntervaloMeses = table.Column<int>(type: "int", nullable: false),
+                    Beneficios = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: false),
+                    Destaque = table.Column<bool>(type: "bit", nullable: false),
+                    CriadoEm = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AvaPlanos", x => x.Id);
+                });
 
             migrationBuilder.CreateTable(
                 name: "Certificados",
@@ -223,26 +252,6 @@ namespace AvaAcademico.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Planos",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Preco = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    IntervaloMeses = table.Column<int>(type: "int", nullable: false),
-                    Beneficios = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    Destaque = table.Column<bool>(type: "bit", nullable: false),
-                    CriadoEm = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Planos", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ProgressosAulas",
                 columns: table => new
                 {
@@ -300,6 +309,38 @@ namespace AvaAcademico.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AvaAssinaturas",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UsuarioId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    PlanoId = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    DataInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DataFim = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    MetodoPagamento = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ValorPago = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    CodigoTransacao = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AvaAssinaturas", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AvaAssinaturas_AspNetUsers_UsuarioId",
+                        column: x => x.UsuarioId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_AvaAssinaturas_AvaPlanos_PlanoId",
+                        column: x => x.PlanoId,
+                        principalTable: "AvaPlanos",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RespostasDuvidasAulas",
                 columns: table => new
                 {
@@ -326,38 +367,6 @@ namespace AvaAcademico.Migrations
                         principalTable: "DuvidasAulas",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Assinaturas",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UsuarioId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    PlanoId = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    DataInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataFim = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    MetodoPagamento = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    ValorPago = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    CodigoTransacao = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Assinaturas", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Assinaturas_AspNetUsers_UsuarioId",
-                        column: x => x.UsuarioId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Assinaturas_Planos_PlanoId",
-                        column: x => x.PlanoId,
-                        principalTable: "Planos",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -389,13 +398,13 @@ namespace AvaAcademico.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Assinaturas_PlanoId",
-                table: "Assinaturas",
+                name: "IX_AvaAssinaturas_PlanoId",
+                table: "AvaAssinaturas",
                 column: "PlanoId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Assinaturas_UsuarioId",
-                table: "Assinaturas",
+                name: "IX_AvaAssinaturas_UsuarioId",
+                table: "AvaAssinaturas",
                 column: "UsuarioId");
 
             migrationBuilder.CreateIndex(
@@ -479,7 +488,7 @@ namespace AvaAcademico.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Assinaturas");
+                name: "AvaAssinaturas");
 
             migrationBuilder.DropTable(
                 name: "Certificados");
@@ -503,7 +512,7 @@ namespace AvaAcademico.Migrations
                 name: "RespostasForum");
 
             migrationBuilder.DropTable(
-                name: "Planos");
+                name: "AvaPlanos");
 
             migrationBuilder.DropTable(
                 name: "DuvidasAulas");
@@ -538,6 +547,15 @@ namespace AvaAcademico.Migrations
             migrationBuilder.DropColumn(
                 name: "Telefone",
                 table: "AspNetUsers");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Titulo",
+                table: "Modulos",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(150)",
+                oldMaxLength: 150);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Titulo",

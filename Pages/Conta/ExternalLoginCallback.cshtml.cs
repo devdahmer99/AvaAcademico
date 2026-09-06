@@ -45,7 +45,7 @@ public class ExternalLoginCallbackModel : PageModel
         var nomeCompleto = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email ?? "Aluno";
         var fotoUrl = info.Principal.FindFirstValue("picture") ?? string.Empty;
 
-        ApplicationUser usuario = null;
+        ApplicationUser? usuario = null;
         if (!string.IsNullOrWhiteSpace(email))
         {
             usuario = await _userManager.FindByEmailAsync(email);

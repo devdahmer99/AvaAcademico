@@ -1,3 +1,4 @@
+@inject Microsoft.AspNetCore.Identity.UserManager<AvaAcademico.Models.ApplicationUser> UserManager
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -225,6 +226,11 @@
                 <span class="sidebar-text">Meu Perfil & Certificados</span>
             </a>
 
+            <a href="/Perfil/Anotacoes" class="sidebar-link">
+                <i class="bi bi-journal-code sidebar-icon text-info"></i>
+                <span class="sidebar-text">Minhas Anotações</span>
+            </a>
+
             <a href="/Certificados/Validar" class="sidebar-link">
                 <i class="bi bi-shield-check sidebar-icon text-secondary"></i>
                 <span class="sidebar-text">Validar Certificado</span>
@@ -265,6 +271,16 @@
                 <a href="/Aulas/UploadEmMassa" class="sidebar-link">
                     <i class="bi bi-cloud-arrow-up sidebar-icon text-primary"></i>
                     <span class="sidebar-text">Upload em Massa</span>
+                </a>
+
+                <a href="/Admin/Laboratorios" class="sidebar-link">
+                    <i class="bi bi-cpu-fill sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Laboratórios Docker</span>
+                </a>
+
+                <a href="/Admin/ImportarDesec" class="sidebar-link">
+                    <i class="bi bi-folder-symlink-fill sidebar-icon text-primary"></i>
+                    <span class="sidebar-text">Importar Desec (501 Aulas)</span>
                 </a>
 
                 <a href="/Admin/Biblioteca" class="sidebar-link">
@@ -322,6 +338,26 @@
             <a href="/Biblioteca" class="text-decoration-none text-muted position-relative p-2" title="Biblioteca Digital">
                 <i class="bi bi-book fs-5"></i>
             </a>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                var currentUser = await UserManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    var nivelInfo = AvaAcademico.Services.GamificacaoService.CalcularNivel(currentUser.PontosXp);
+                    <a href="/Perfil" class="badge-xp-pill d-none d-sm-flex align-items-center gap-2 px-3 py-1 text-decoration-none rounded-pill border shadow-xs" 
+                       style="background: var(--app-surface-hover); color: var(--app-text-primary);"
+                       title="Patente: @nivelInfo.Titulo (@currentUser.PontosXp XP)">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle bg-warning text-dark fw-bold" style="width: 26px; height: 26px; font-size: 0.75rem; box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);">
+                            @nivelInfo.Nivel
+                        </div>
+                        <div class="d-flex flex-column text-start" style="line-height: 1.15;">
+                            <span class="fw-bold text-primary" style="font-size: 0.75rem;">@nivelInfo.Titulo</span>
+                            <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-stars text-warning"></i> @currentUser.PontosXp XP</span>
+                        </div>
+                    </a>
+                }
+            }
 
             <a href="/Perfil" class="text-decoration-none d-flex align-items-center gap-2" title="Meu Perfil">
                 <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center overflow-hidden border" style="width: 38px; height: 38px;">

@@ -4,6 +4,7 @@ using AvaAcademico.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AvaAcademico.Migrations
 {
     [DbContext(typeof(AvaContext))]
-    partial class AvaContextModelSnapshot : ModelSnapshot
+    [Migration("20260906163057_AddLaboratoriosFeature")]
+    partial class AddLaboratoriosFeature
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,42 +24,6 @@ namespace AvaAcademico.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("AvaAcademico.Models.AnotacaoAula", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AtualizadoEm")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("AulaId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Conteudo")
-                        .IsRequired()
-                        .HasMaxLength(10000)
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UsuarioId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AulaId");
-
-                    b.HasIndex("UsuarioId", "AulaId")
-                        .IsUnique();
-
-                    b.ToTable("AvaAnotacoesAulas", (string)null);
-                });
 
             modelBuilder.Entity("AvaAcademico.Models.ApplicationUser", b =>
                 {
@@ -114,9 +81,6 @@ namespace AvaAcademico.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
-
-                    b.Property<int>("PontosXp")
-                        .HasColumnType("int");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -316,93 +280,6 @@ namespace AvaAcademico.Migrations
                     b.ToTable("ConfiguracoesPagamento");
                 });
 
-            modelBuilder.Entity("AvaAcademico.Models.Conquista", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Categoria")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("CorDestaque")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CursoId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Icone")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("ModuloId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Titulo")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<int>("XpRecompensa")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CursoId");
-
-                    b.HasIndex("ModuloId");
-
-                    b.ToTable("AvaConquistas", (string)null);
-                });
-
-            modelBuilder.Entity("AvaAcademico.Models.ConquistaUsuario", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ConquistaId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DesbloqueadoEm")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UsuarioId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConquistaId");
-
-                    b.HasIndex("UsuarioId", "ConquistaId")
-                        .IsUnique();
-
-                    b.ToTable("AvaConquistasUsuarios", (string)null);
-                });
-
             modelBuilder.Entity("AvaAcademico.Models.Curso", b =>
                 {
                     b.Property<int>("Id")
@@ -543,14 +420,6 @@ namespace AvaAcademico.Migrations
                     b.Property<int?>("AulaId")
                         .HasColumnType("int");
 
-                    b.Property<string>("CenarioBriefing")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<string>("ComandoCustomizado")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("datetime2");
 
@@ -558,11 +427,6 @@ namespace AvaAcademico.Migrations
                         .IsRequired()
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
-
-                    b.Property<string>("Dificuldade")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Flag")
                         .HasMaxLength(150)
@@ -580,10 +444,6 @@ namespace AvaAcademico.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("Pistas")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
                     b.Property<int>("Pontos")
                         .HasColumnType("int");
 
@@ -597,15 +457,6 @@ namespace AvaAcademico.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("VetorAtaque")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Writeup")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
 
                     b.HasKey("Id");
 
@@ -1036,25 +887,6 @@ namespace AvaAcademico.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("AvaAcademico.Models.AnotacaoAula", b =>
-                {
-                    b.HasOne("AvaAcademico.Models.Aula", "Aula")
-                        .WithMany()
-                        .HasForeignKey("AulaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AvaAcademico.Models.ApplicationUser", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Aula");
-
-                    b.Navigation("Usuario");
-                });
-
             modelBuilder.Entity("AvaAcademico.Models.Assinatura", b =>
                 {
                     b.HasOne("AvaAcademico.Models.Plano", "Plano")
@@ -1100,42 +932,6 @@ namespace AvaAcademico.Migrations
                         .IsRequired();
 
                     b.Navigation("Curso");
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("AvaAcademico.Models.Conquista", b =>
-                {
-                    b.HasOne("AvaAcademico.Models.Curso", "Curso")
-                        .WithMany()
-                        .HasForeignKey("CursoId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("AvaAcademico.Models.Modulo", "Modulo")
-                        .WithMany()
-                        .HasForeignKey("ModuloId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Curso");
-
-                    b.Navigation("Modulo");
-                });
-
-            modelBuilder.Entity("AvaAcademico.Models.ConquistaUsuario", b =>
-                {
-                    b.HasOne("AvaAcademico.Models.Conquista", "Conquista")
-                        .WithMany("Usuarios")
-                        .HasForeignKey("ConquistaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AvaAcademico.Models.ApplicationUser", "Usuario")
-                        .WithMany("Conquistas")
-                        .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Conquista");
 
                     b.Navigation("Usuario");
                 });
@@ -1360,8 +1156,6 @@ namespace AvaAcademico.Migrations
 
                     b.Navigation("Certificados");
 
-                    b.Navigation("Conquistas");
-
                     b.Navigation("Matriculas");
                 });
 
@@ -1370,11 +1164,6 @@ namespace AvaAcademico.Migrations
                     b.Navigation("Duvidas");
 
                     b.Navigation("Progressos");
-                });
-
-            modelBuilder.Entity("AvaAcademico.Models.Conquista", b =>
-                {
-                    b.Navigation("Usuarios");
                 });
 
             modelBuilder.Entity("AvaAcademico.Models.Curso", b =>

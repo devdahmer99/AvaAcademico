@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AvaAcademico.Migrations
 {
     [DbContext(typeof(AvaContext))]
-    [Migration("20260814174113_AddProfessionalAvaFeatures")]
-    partial class AddProfessionalAvaFeatures
+    [Migration("20260906181658_AddDesafiosRealistasLaboratorios")]
+    partial class AddDesafiosRealistasLaboratorios
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -81,6 +81,9 @@ namespace AvaAcademico.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<int>("PontosXp")
+                        .HasColumnType("int");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -152,7 +155,7 @@ namespace AvaAcademico.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("Assinaturas");
+                    b.ToTable("AvaAssinaturas", (string)null);
                 });
 
             modelBuilder.Entity("AvaAcademico.Models.Aula", b =>
@@ -280,6 +283,93 @@ namespace AvaAcademico.Migrations
                     b.ToTable("ConfiguracoesPagamento");
                 });
 
+            modelBuilder.Entity("AvaAcademico.Models.Conquista", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CorDestaque")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CursoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Icone")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("ModuloId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("XpRecompensa")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId");
+
+                    b.HasIndex("ModuloId");
+
+                    b.ToTable("AvaConquistas", (string)null);
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.ConquistaUsuario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ConquistaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DesbloqueadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConquistaId");
+
+                    b.HasIndex("UsuarioId", "ConquistaId")
+                        .IsUnique();
+
+                    b.ToTable("AvaConquistasUsuarios", (string)null);
+                });
+
             modelBuilder.Entity("AvaAcademico.Models.Curso", b =>
                 {
                     b.Property<int>("Id")
@@ -351,6 +441,146 @@ namespace AvaAcademico.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("DuvidasAulas");
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.InstanciaLaboratorio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContainerId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("ExpiraEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FlagSubmetida")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("IniciadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LaboratorioId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PortaHost")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Resolvido")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ResolvidoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LaboratorioId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("AvaInstanciasLaboratorios", (string)null);
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.Laboratorio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("AulaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CenarioBriefing")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("ComandoCustomizado")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Dificuldade")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Flag")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ImagemDocker")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("ModuloId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ParametrosAmbiente")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Pistas")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("Pontos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PortaPadraoContainer")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TempoLimiteMinutos")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("VetorAtaque")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Writeup")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AulaId");
+
+                    b.HasIndex("ModuloId");
+
+                    b.ToTable("AvaLaboratorios", (string)null);
                 });
 
             modelBuilder.Entity("AvaAcademico.Models.LivroBiblioteca", b =>
@@ -454,7 +684,8 @@ namespace AvaAcademico.Migrations
 
                     b.Property<string>("Titulo")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.HasKey("Id");
 
@@ -502,7 +733,7 @@ namespace AvaAcademico.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Planos");
+                    b.ToTable("AvaPlanos", (string)null);
                 });
 
             modelBuilder.Entity("AvaAcademico.Models.ProgressoAula", b =>
@@ -821,6 +1052,42 @@ namespace AvaAcademico.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("AvaAcademico.Models.Conquista", b =>
+                {
+                    b.HasOne("AvaAcademico.Models.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AvaAcademico.Models.Modulo", "Modulo")
+                        .WithMany()
+                        .HasForeignKey("ModuloId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Curso");
+
+                    b.Navigation("Modulo");
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.ConquistaUsuario", b =>
+                {
+                    b.HasOne("AvaAcademico.Models.Conquista", "Conquista")
+                        .WithMany("Usuarios")
+                        .HasForeignKey("ConquistaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AvaAcademico.Models.ApplicationUser", "Usuario")
+                        .WithMany("Conquistas")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conquista");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("AvaAcademico.Models.DuvidaAula", b =>
                 {
                     b.HasOne("AvaAcademico.Models.Aula", "Aula")
@@ -838,6 +1105,42 @@ namespace AvaAcademico.Migrations
                     b.Navigation("Aula");
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.InstanciaLaboratorio", b =>
+                {
+                    b.HasOne("AvaAcademico.Models.Laboratorio", "Laboratorio")
+                        .WithMany("Instancias")
+                        .HasForeignKey("LaboratorioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AvaAcademico.Models.ApplicationUser", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Laboratorio");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.Laboratorio", b =>
+                {
+                    b.HasOne("AvaAcademico.Models.Aula", "Aula")
+                        .WithMany()
+                        .HasForeignKey("AulaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AvaAcademico.Models.Modulo", "Modulo")
+                        .WithMany()
+                        .HasForeignKey("ModuloId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Aula");
+
+                    b.Navigation("Modulo");
                 });
 
             modelBuilder.Entity("AvaAcademico.Models.MatriculaCurso", b =>
@@ -1005,6 +1308,8 @@ namespace AvaAcademico.Migrations
 
                     b.Navigation("Certificados");
 
+                    b.Navigation("Conquistas");
+
                     b.Navigation("Matriculas");
                 });
 
@@ -1013,6 +1318,11 @@ namespace AvaAcademico.Migrations
                     b.Navigation("Duvidas");
 
                     b.Navigation("Progressos");
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.Conquista", b =>
+                {
+                    b.Navigation("Usuarios");
                 });
 
             modelBuilder.Entity("AvaAcademico.Models.Curso", b =>
@@ -1029,6 +1339,11 @@ namespace AvaAcademico.Migrations
             modelBuilder.Entity("AvaAcademico.Models.DuvidaAula", b =>
                 {
                     b.Navigation("Respostas");
+                });
+
+            modelBuilder.Entity("AvaAcademico.Models.Laboratorio", b =>
+                {
+                    b.Navigation("Instancias");
                 });
 
             modelBuilder.Entity("AvaAcademico.Models.Modulo", b =>

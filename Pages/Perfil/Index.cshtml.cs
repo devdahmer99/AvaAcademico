@@ -17,23 +17,27 @@ public class IndexModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IWebHostEnvironment _env;
+    private readonly AvaAcademico.Services.IGamificacaoService _gamificacaoService;
 
     public IndexModel(
         AvaContext context,
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        AvaAcademico.Services.IGamificacaoService gamificacaoService)
     {
         _context = context;
         _userManager = userManager;
         _signInManager = signInManager;
         _env = env;
+        _gamificacaoService = gamificacaoService;
     }
 
     public ApplicationUser Usuario { get; set; } = null!;
     public AvaAcademico.Models.Assinatura? AssinaturaAtiva { get; set; }
     public List<CursoComProgressoViewModel> CursosMatriculados { get; set; } = new();
     public List<Certificado> CertificadosObtidos { get; set; } = new();
+    public AvaAcademico.Services.PerfilGamificacaoDto PerfilGamificacao { get; set; } = null!;
 
     public int TotalAulasConcluidas { get; set; }
     public int HorasEstimadasEstudo { get; set; }
@@ -248,5 +252,8 @@ public class IndexModel : PageModel
                 CodigoCertificado = cert?.CodigoAutenticidade
             };
         }).ToList();
+
+        // 5. Dados de Gamificação e Conquistas
+        PerfilGamificacao = await _gamificacaoService.ObterPerfilGamificacaoAsync(userId);
     }
 }

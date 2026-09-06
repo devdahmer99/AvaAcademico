@@ -27,7 +27,7 @@ public class CriarModel : PageModel
     public int? ModuloId { get; set; }
 
     [BindProperty]
-    public IFormFile VideoUpload { get; set; }
+    public IFormFile? VideoUpload { get; set; }
 
     public List<Curso> CursosComModulos { get; set; } = new();
 

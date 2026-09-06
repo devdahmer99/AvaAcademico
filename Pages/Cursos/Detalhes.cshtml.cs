@@ -35,7 +35,7 @@ public class DetalhesModel : PageModel
         Curso = await _context.Cursos
             .Include(c => c.Modulos)
             .ThenInclude(m => m.Aulas)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == id) ?? null!;
 
         if (Curso == null) return NotFound();
 

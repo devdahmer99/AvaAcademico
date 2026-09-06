@@ -15,16 +15,35 @@ public class AssistirModel : PageModel
     private readonly AvaContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IWebHostEnvironment _env;
+    private readonly AvaAcademico.Services.IDockerService _dockerService;
+    private readonly AvaAcademico.Services.IGamificacaoService _gamificacaoService;
 
     public AssistirModel(
         AvaContext context,
         UserManager<ApplicationUser> userManager,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        AvaAcademico.Services.IDockerService dockerService,
+        AvaAcademico.Services.IGamificacaoService gamificacaoService)
     {
         _context = context;
         _userManager = userManager;
         _env = env;
+        _dockerService = dockerService;
+        _gamificacaoService = gamificacaoService;
     }
+
+    public Laboratorio? LaboratorioDisponivel { get; set; }
+    public InstanciaLaboratorio? InstanciaAtiva { get; set; }
+    public bool LabResolvidoPorMim { get; set; }
+    public bool DockerDisponivel { get; set; } = true;
+
+    [BindProperty]
+    public string? FlagSubmissao { get; set; }
+
+    [BindProperty]
+    public string? ConteudoAnotacao { get; set; }
+
+    public AnotacaoAula? MinhaAnotacao { get; set; }
 
     public Aula AulaAtual { get; set; } = null!;
     public Curso CursoAtual { get; set; } = null!;
@@ -66,18 +85,18 @@ public class AssistirModel : PageModel
 
         AulaAtual = await _context.Aulas
             .Include(a => a.Modulo)
-            .FirstOrDefaultAsync(a => a.Id == id);
+            .FirstOrDefaultAsync(a => a.Id == id) ?? null!;
 
         if (AulaAtual == null || AulaAtual.Modulo == null) return NotFound();
 
         CursoAtual = await _context.Cursos
             .Include(c => c.Modulos)
                 .ThenInclude(m => m.Aulas)
-            .FirstOrDefaultAsync(c => c.Id == AulaAtual.Modulo.CursoId);
+            .FirstOrDefaultAsync(c => c.Id == AulaAtual.Modulo.CursoId) ?? null!;
 
         if (CursoAtual == null) return NotFound();
 
-        // Determina aula anterior e prÃ³xima do curso
+        // Determina aula anterior e próxima do curso
         var todasAulasOrdenadas = CursoAtual.Modulos
             .OrderBy(m => m.Ordem)
             .SelectMany(m => m.Aulas.OrderBy(a => a.Ordem))
@@ -107,7 +126,7 @@ public class AssistirModel : PageModel
         PercentualProgresso = TotalAulasCurso > 0 ? (int)Math.Round((double)MinhasAulasConcluidasCount / TotalAulasCurso * 100) : 0;
         Curso100PorCentoConcluido = TotalAulasCurso > 0 && MinhasAulasConcluidasCount >= TotalAulasCurso;
 
-        // 2. Carrega DÃºvidas da Aula
+        // 2. Carrega Dúvidas da Aula
         Duvidas = await _context.DuvidasAulas
             .Include(d => d.Usuario)
             .Include(d => d.Respostas)
@@ -116,7 +135,154 @@ public class AssistirModel : PageModel
             .OrderByDescending(d => d.CriadoEm)
             .ToListAsync();
 
+        // 3. Carrega Laboratório associado à Aula ou ao Módulo
+        LaboratorioDisponivel = await _context.Laboratorios
+            .FirstOrDefaultAsync(l => l.Ativo && (l.AulaId == id || (l.ModuloId == AulaAtual.ModuloId && l.AulaId == null)));
+
+        if (LaboratorioDisponivel != null)
+        {
+            DockerDisponivel = await _dockerService.IsDockerDisponivelAsync();
+
+            LabResolvidoPorMim = await _context.InstanciasLaboratorios
+                .AnyAsync(i => i.LaboratorioId == LaboratorioDisponivel.Id && i.UsuarioId == user.Id && i.Resolvido);
+
+            InstanciaAtiva = await _context.InstanciasLaboratorios
+                .FirstOrDefaultAsync(i => i.LaboratorioId == LaboratorioDisponivel.Id && i.UsuarioId == user.Id && i.Status == "Executando" && i.ExpiraEm > DateTime.UtcNow);
+
+            // Confirma se o container continua rodando no Docker
+            if (InstanciaAtiva != null && DockerDisponivel)
+            {
+                bool aindaExecutando = await _dockerService.IsContainerExecutandoAsync(InstanciaAtiva.ContainerId);
+                if (!aindaExecutando)
+                {
+                    InstanciaAtiva.Status = "Finalizado";
+                    await _context.SaveChangesAsync();
+                    InstanciaAtiva = null;
+                }
+            }
+        }
+
+        // 4. Carrega anotação pessoal do aluno para esta aula
+        MinhaAnotacao = await _context.AnotacoesAulas
+            .FirstOrDefaultAsync(a => a.AulaId == id && a.UsuarioId == user.Id);
+        ConteudoAnotacao = MinhaAnotacao?.Conteudo ?? string.Empty;
+
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostIniciarLabAsync(int id, int labId)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return RedirectToPage("/Conta/Login");
+
+        var lab = await _context.Laboratorios.FindAsync(labId);
+        if (lab == null || !lab.Ativo)
+        {
+            TempData["MensagemErro"] = "Laboratório não encontrado ou inativo.";
+            return RedirectToPage(new { id = id });
+        }
+
+        var resultado = await _dockerService.IniciarLaboratorioAsync(lab, user.Id);
+        if (resultado.Sucesso)
+        {
+            TempData["MensagemSucesso"] = $"Laboratório iniciado com sucesso na porta {resultado.PortaHost}! Alvo pronto para teste.";
+        }
+        else
+        {
+            TempData["MensagemErro"] = resultado.Mensagem;
+        }
+
+        return RedirectToPage(new { id = id });
+    }
+
+    public async Task<IActionResult> OnPostPararLabAsync(int id, int instanciaId)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return RedirectToPage("/Conta/Login");
+
+        var instancia = await _context.InstanciasLaboratorios.FindAsync(instanciaId);
+        if (instancia != null && instancia.UsuarioId == user.Id)
+        {
+            await _dockerService.PararLaboratorioAsync(instancia.ContainerId);
+            TempData["MensagemSucesso"] = "Laboratório encerrado com sucesso! Os recursos do computador foram liberados.";
+        }
+
+        return RedirectToPage(new { id = id });
+    }
+
+    public async Task<IActionResult> OnPostSubmeterFlagAsync(int id, int instanciaId)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return RedirectToPage("/Conta/Login");
+
+        var instancia = await _context.InstanciasLaboratorios
+            .Include(i => i.Laboratorio)
+            .FirstOrDefaultAsync(i => i.Id == instanciaId && i.UsuarioId == user.Id);
+
+        if (instancia == null || instancia.Laboratorio == null)
+        {
+            TempData["MensagemErro"] = "Instância de laboratório não encontrada.";
+            return RedirectToPage(new { id = id });
+        }
+
+        if (string.IsNullOrWhiteSpace(FlagSubmissao))
+        {
+            TempData["MensagemErro"] = "Digite a flag capturada antes de submeter.";
+            return RedirectToPage(new { id = id });
+        }
+
+        var flagEsperada = instancia.Laboratorio.Flag?.Trim() ?? "";
+        var flagInformada = FlagSubmissao.Trim();
+
+        if (!string.IsNullOrEmpty(flagEsperada) && string.Equals(flagInformada, flagEsperada, StringComparison.OrdinalIgnoreCase))
+        {
+            instancia.Resolvido = true;
+            instancia.ResolvidoEm = DateTime.UtcNow;
+            instancia.FlagSubmetida = flagInformada;
+            await _context.SaveChangesAsync();
+
+            // Gamificação: Credita XP do laboratório e desbloqueia badge
+            var resultadoLab = await _gamificacaoService.CreditarXpAsync(user.Id, instancia.Laboratorio.Pontos, $"Laboratório: {instancia.Laboratorio.Titulo}");
+            var resultadoBadge = await _gamificacaoService.DesbloquearConquistaAsync(user.Id, "PRIMEIRO_LAB_CONCLUIDO");
+
+            if (resultadoBadge.ConquistaDesbloqueada != null)
+            {
+                TempData["ModuloConcluidoNome"] = "Desafio Hands-on Concluído!";
+                TempData["BadgeTitulo"] = resultadoBadge.ConquistaDesbloqueada.Titulo;
+                TempData["BadgeDescricao"] = resultadoBadge.ConquistaDesbloqueada.Descricao;
+                TempData["BadgeIcone"] = resultadoBadge.ConquistaDesbloqueada.Icone;
+                TempData["BadgeCor"] = resultadoBadge.ConquistaDesbloqueada.CorDestaque;
+                TempData["BadgeXp"] = resultadoBadge.ConquistaDesbloqueada.XpRecompensa;
+                TempData["XpTotal"] = resultadoLab.XpTotal;
+                TempData["Nivel"] = resultadoLab.Nivel;
+                TempData["TituloNivel"] = resultadoLab.TituloNivel;
+                TempData["SubiuDeNivel"] = resultadoLab.SubiuDeNivel || resultadoBadge.SubiuDeNivel;
+            }
+
+            TempData["MensagemSucesso"] = $"🏆 EXCELENTE TRABALHO! Flag validada com sucesso! Você conquistou +{instancia.Laboratorio.Pontos} XP no laboratório!";
+        }
+        else
+        {
+            TempData["MensagemErro"] = "❌ Flag incorreta! Continue explorando o alvo e tente novamente.";
+        }
+
+        return RedirectToPage(new { id = id });
+    }
+
+    public async Task<IActionResult> OnPostEstenderTempoLabAsync(int id, int instanciaId)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return RedirectToPage("/Conta/Login");
+
+        var instancia = await _context.InstanciasLaboratorios.FindAsync(instanciaId);
+        if (instancia != null && instancia.UsuarioId == user.Id && instancia.Status == "Executando")
+        {
+            instancia.ExpiraEm = instancia.ExpiraEm.AddMinutes(30);
+            await _context.SaveChangesAsync();
+            TempData["MensagemSucesso"] = "Tempo do laboratório estendido em +30 minutos!";
+        }
+
+        return RedirectToPage(new { id = id });
     }
 
     public async Task<IActionResult> OnPostMarcarConcluidaAsync(int id)
@@ -136,7 +302,26 @@ public class AssistirModel : PageModel
                 ConcluidaEm = DateTime.UtcNow
             });
             await _context.SaveChangesAsync();
-            TempData["mensagemSuhåsso"] = "Aula marcada como concluÃ­da! Seu progresso foi atualizado.";
+
+            var gamif = await _gamificacaoService.ProcessarConclusaoAulaAsync(user.Id, id);
+
+            if (gamif.ModuloConcluido && gamif.ConquistaDesbloqueada != null)
+            {
+                TempData["ModuloConcluidoNome"] = gamif.NomeModuloConcluido;
+                TempData["BadgeTitulo"] = gamif.ConquistaDesbloqueada.Titulo;
+                TempData["BadgeDescricao"] = gamif.ConquistaDesbloqueada.Descricao;
+                TempData["BadgeIcone"] = gamif.ConquistaDesbloqueada.Icone;
+                TempData["BadgeCor"] = gamif.ConquistaDesbloqueada.CorDestaque;
+                TempData["BadgeXp"] = gamif.ConquistaDesbloqueada.XpRecompensa;
+                TempData["XpTotal"] = gamif.XpTotal;
+                TempData["Nivel"] = gamif.Nivel;
+                TempData["TituloNivel"] = gamif.TituloNivel;
+                TempData["SubiuDeNivel"] = gamif.SubiuDeNivel;
+            }
+            else
+            {
+                TempData["MensagemSucesso"] = $"Aula marcada como concluída! +{gamif.XpGanho} XP adicionado ao seu perfil.";
+            }
         }
 
         return RedirectToPage(new { id = id });
@@ -146,7 +331,6 @@ public class AssistirModel : PageModel
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return new StatusCodeResult(401);
-
 
         var jaExiste = await _context.ProgressosAulas
             .AnyAsync(p => p.UsuarioId == user.Id && p.AulaId == id);
@@ -160,9 +344,31 @@ public class AssistirModel : PageModel
                 ConcluidaEm = DateTime.UtcNow
             });
             await _context.SaveChangesAsync();
+
+            var gamif = await _gamificacaoService.ProcessarConclusaoAulaAsync(user.Id, id);
+
+            return new JsonResult(new
+            {
+                success = true,
+                moduloConcluido = gamif.ModuloConcluido,
+                nomeModulo = gamif.NomeModuloConcluido,
+                badge = gamif.ConquistaDesbloqueada != null ? new
+                {
+                    titulo = gamif.ConquistaDesbloqueada.Titulo,
+                    descricao = gamif.ConquistaDesbloqueada.Descricao,
+                    icone = gamif.ConquistaDesbloqueada.Icone,
+                    cor = gamif.ConquistaDesbloqueada.CorDestaque,
+                    xp = gamif.ConquistaDesbloqueada.XpRecompensa
+                } : null,
+                xpGanho = gamif.XpGanho,
+                xpTotal = gamif.XpTotal,
+                nivel = gamif.Nivel,
+                tituloNivel = gamif.TituloNivel,
+                subiuDeNivel = gamif.SubiuDeNivel
+            });
         }
 
-        return new JsonResult(new { success = true });
+        return new JsonResult(new { success = true, jaConcluida = true });
     }
 
     public async Task<IActionResult> OnPostEnviarDuvidaAsync(int id)
@@ -172,7 +378,7 @@ public class AssistirModel : PageModel
 
         if (string.IsNullOrWhiteSpace(NovaDuvida.Pergunta))
         {
-            TempData["MensagemErro"] = "Digite sua dÃºvida antes de enviar.";
+            TempData["MensagemErro"] = "Digite sua dúvida antes de enviar.";
             return RedirectToPage(new { id = id });
         }
 
@@ -221,17 +427,70 @@ public class AssistirModel : PageModel
         return RedirectToPage(new { id = id });
     }
 
-    // Stream do vÃ­deo sem travar
+    // Stream do vídeo com suporte a Range Requests (Seek sem travar)
     public IActionResult OnGetStream(string arquivo)
     {
         if (string.IsNullOrEmpty(arquivo)) return NotFound();
-        var caminho = Path.Combine(_env.WebRootPath, "videos", arquivo);
-        if (!System.IO.File.Exists(caminho)) return NotFound();
+
+        string caminho;
+        if (System.IO.File.Exists(arquivo))
+        {
+            caminho = arquivo;
+        }
+        else
+        {
+            caminho = Path.Combine(_env.WebRootPath, "videos", arquivo);
+            if (!System.IO.File.Exists(caminho)) return NotFound();
+        }
 
         return new PhysicalFileResult(caminho, "video/mp4")
         {
             EnableRangeProcessing = true
         };
+    }
+
+    // Salva anotação pessoal via AJAX (sem recarregar a página)
+    public async Task<IActionResult> OnPostSalvarAnotacaoAjaxAsync(int id, [FromBody] SalvarAnotacaoInput input)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return new StatusCodeResult(401);
+
+        var texto = input?.Conteudo ?? string.Empty;
+        if (texto.Length > 10000) texto = texto[..10000];
+
+        var anotacao = await _context.AnotacoesAulas
+            .FirstOrDefaultAsync(a => a.AulaId == id && a.UsuarioId == user.Id);
+
+        if (anotacao == null)
+        {
+            anotacao = new AnotacaoAula
+            {
+                AulaId = id,
+                UsuarioId = user.Id,
+                Conteudo = texto,
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow
+            };
+            _context.AnotacoesAulas.Add(anotacao);
+        }
+        else
+        {
+            anotacao.Conteudo = texto;
+            anotacao.AtualizadoEm = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new JsonResult(new
+        {
+            success = true,
+            atualizadoEm = anotacao.AtualizadoEm.ToLocalTime().ToString("HH:mm:ss")
+        });
+    }
+
+    public class SalvarAnotacaoInput
+    {
+        public string? Conteudo { get; set; }
     }
 }
 

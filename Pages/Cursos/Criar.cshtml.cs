@@ -17,7 +17,7 @@ public class CriarModel : PageModel
     }
 
     [BindProperty]
-    public Curso Curso { get; set; }
+    public Curso Curso { get; set; } = null!;
 
     public async Task<IActionResult> OnPostAsync()
     {

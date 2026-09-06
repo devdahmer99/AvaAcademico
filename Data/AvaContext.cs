@@ -24,6 +24,11 @@ namespace AvaAcademico.Data
         public DbSet<DuvidaAula> DuvidasAulas { get; set; }
         public DbSet<RespostaDuvidaAula> RespostasDuvidasAulas { get; set; }
         public DbSet<LivroBiblioteca> LivrosBiblioteca { get; set; }
+        public DbSet<Laboratorio> Laboratorios { get; set; }
+        public DbSet<InstanciaLaboratorio> InstanciasLaboratorios { get; set; }
+        public DbSet<Conquista> Conquistas { get; set; }
+        public DbSet<ConquistaUsuario> ConquistasUsuarios { get; set; }
+        public DbSet<AnotacaoAula> AnotacoesAulas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +56,10 @@ namespace AvaAcademico.Data
                 .WithMany(m => m.Aulas)
                 .HasForeignKey(a => a.ModuloId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Mapeamento de tabelas para evitar conflito com tabelas existentes do ERP (ex: PLANOS)
+            modelBuilder.Entity<Plano>().ToTable("AvaPlanos");
+            modelBuilder.Entity<Assinatura>().ToTable("AvaAssinaturas");
 
             // Relacionamentos de Assinatura
             modelBuilder.Entity<Assinatura>()
@@ -157,6 +166,85 @@ namespace AvaAcademico.Data
                 .WithMany()
                 .HasForeignKey(r => r.UsuarioId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Relacionamentos e Mapeamento de Laboratórios
+            modelBuilder.Entity<Laboratorio>().ToTable("AvaLaboratorios");
+            modelBuilder.Entity<InstanciaLaboratorio>().ToTable("AvaInstanciasLaboratorios");
+
+            modelBuilder.Entity<Laboratorio>()
+                .HasOne(l => l.Aula)
+                .WithMany()
+                .HasForeignKey(l => l.AulaId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Laboratorio>()
+                .HasOne(l => l.Modulo)
+                .WithMany()
+                .HasForeignKey(l => l.ModuloId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<InstanciaLaboratorio>()
+                .HasOne(i => i.Laboratorio)
+                .WithMany(l => l.Instancias)
+                .HasForeignKey(i => i.LaboratorioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<InstanciaLaboratorio>()
+                .HasOne(i => i.Usuario)
+                .WithMany()
+                .HasForeignKey(i => i.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relacionamentos e Mapeamento de Gamificação e Conquistas
+            modelBuilder.Entity<Conquista>().ToTable("AvaConquistas");
+            modelBuilder.Entity<ConquistaUsuario>().ToTable("AvaConquistasUsuarios");
+
+            modelBuilder.Entity<ConquistaUsuario>()
+                .HasIndex(cu => new { cu.UsuarioId, cu.ConquistaId })
+                .IsUnique();
+
+            modelBuilder.Entity<Conquista>()
+                .HasOne(c => c.Modulo)
+                .WithMany()
+                .HasForeignKey(c => c.ModuloId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Conquista>()
+                .HasOne(c => c.Curso)
+                .WithMany()
+                .HasForeignKey(c => c.CursoId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<ConquistaUsuario>()
+                .HasOne(cu => cu.Usuario)
+                .WithMany(u => u.Conquistas)
+                .HasForeignKey(cu => cu.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ConquistaUsuario>()
+                .HasOne(cu => cu.Conquista)
+                .WithMany(c => c.Usuarios)
+                .HasForeignKey(cu => cu.ConquistaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relacionamento e Mapeamento de Anotações de Aulas
+            modelBuilder.Entity<AnotacaoAula>().ToTable("AvaAnotacoesAulas");
+
+            modelBuilder.Entity<AnotacaoAula>()
+                .HasIndex(a => new { a.UsuarioId, a.AulaId })
+                .IsUnique();
+
+            modelBuilder.Entity<AnotacaoAula>()
+                .HasOne(a => a.Aula)
+                .WithMany()
+                .HasForeignKey(a => a.AulaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AnotacaoAula>()
+                .HasOne(a => a.Usuario)
+                .WithMany()
+                .HasForeignKey(a => a.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -21,6 +21,14 @@
     </div>
 }
 
+@if (TempData["MensagemErro"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["MensagemErro"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <!-- Alerta de Conclusão de 100% e Desbloqueio de Certificado -->
 @if (Model.Curso100PorCentoConcluido)
 {
@@ -46,7 +54,7 @@
         <div class="bg-white border border-light p-4 rounded-4 shadow-sm mb-4">
             <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                 <span class="badge bg-light text-primary border rounded-pill px-3 py-1 fw-semibold small">
-                    Módulo @Model.AulaAtual.Modulo.Ordem: @Model.AulaAtual.Modulo.Titulo
+                    Módulo @Model.AulaAtual.Modulo!.Ordem: @Model.AulaAtual.Modulo!.Titulo
                 </span>
                 <span class="text-muted small">
                     Aula @Model.AulaAtual.Ordem &bull; Progresso do Curso: <strong>@Model.PercentualProgresso%</strong>
@@ -115,11 +123,9 @@
 
                     @if (!Model.IsConcluidaPorMim)
                     {
-                        <form method="post" asp-page-handler="MarcarConcluida" asp-route-id="@Model.AulaAtual.Id" class="d-inline">
-                            <button type="submit" class="btn btn-success btn-sm px-3 py-1 fw-semibold rounded-pill shadow-sm">
-                                <i class="bi bi-check-lg me-1"></i> Marcar Concluída
-                            </button>
-                        </form>
+                        <button type="button" id="btnMarcarConcluida" class="btn btn-success btn-sm px-3 py-1 fw-semibold rounded-pill shadow-sm" onclick="marcarAulaConcluidaManual(this)">
+                            <i class="bi bi-check-lg me-1"></i> Marcar Concluída
+                        </button>
                     }
                     else
                     {
@@ -134,6 +140,345 @@
                             Próxima <i class="bi bi-chevron-right ms-1"></i>
                         </a>
                     }
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Laboratório Prático Hands-on (Docker) -->
+        @if (Model.LaboratorioDisponivel != null)
+        {
+            var lab = Model.LaboratorioDisponivel;
+            var instancia = Model.InstanciaAtiva;
+            var isResolvido = Model.LabResolvidoPorMim;
+
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4 border-start border-4 @(isResolvido ? "border-success" : (instancia != null ? "border-primary" : "border-warning"))">
+                <!-- Cabeçalho do Laboratório / Status & Badges -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge @(isResolvido ? "bg-success" : (instancia != null ? "bg-primary" : "bg-warning text-dark")) rounded-pill px-3 py-1 fw-bold">
+                            <i class="bi bi-cpu-fill me-1"></i> Laboratório Hands-on
+                        </span>
+
+                        <!-- Badge de Dificuldade -->
+                        @{
+                            var difClass = lab.Dificuldade switch
+                            {
+                                "Iniciante" => "bg-success bg-opacity-10 text-success border border-success border-opacity-25",
+                                "Avançado" => "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25",
+                                "Insano" => "bg-dark text-warning border border-warning",
+                                _ => "bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"
+                            };
+                        }
+                        <span class="badge @difClass rounded-pill px-3 py-1 fw-semibold">
+                            <i class="bi bi-shield-shaded me-1"></i> @lab.Dificuldade
+                        </span>
+
+                        @if (!string.IsNullOrWhiteSpace(lab.VetorAtaque) && lab.VetorAtaque != "Geral")
+                        {
+                            <span class="badge bg-dark rounded-pill px-3 py-1 fw-semibold">
+                                <i class="bi bi-crosshair me-1 text-danger"></i> @lab.VetorAtaque
+                            </span>
+                        }
+
+                        @if (isResolvido)
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-semibold">
+                                <i class="bi bi-check-circle-fill me-1"></i> Flag Capturada (+@lab.Pontos XP)
+                            </span>
+                        }
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">
+                            <i class="bi bi-stopwatch me-1"></i> Limite: @lab.TempoLimiteMinutos min
+                        </span>
+                        <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small">
+                            <i class="bi bi-award-fill text-warning me-1"></i> @lab.Pontos XP
+                        </span>
+                    </div>
+                </div>
+
+                <h4 class="fw-bold text-dark mb-2" style="font-size: 1.25rem;">
+                    <i class="bi bi-terminal-split text-primary me-2"></i>@lab.Titulo
+                </h4>
+
+                <!-- Briefing da Operação & Regras de Engajamento -->
+                @if (!string.IsNullOrWhiteSpace(lab.CenarioBriefing))
+                {
+                    <div class="p-3 mb-3 rounded-3 border" style="background-color: #f8fafc; border-left: 4px solid #3b82f6 !important;">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-primary fw-bold small">
+                            <i class="bi bi-journal-text fs-6"></i> BRIEFING DE OPERAÇÃO & REGRAS DE ENGAJAMENTO
+                        </div>
+                        <div class="text-dark small" style="white-space: pre-line; line-height: 1.6;">
+                            @lab.CenarioBriefing
+                        </div>
+                    </div>
+                }
+                else if (!string.IsNullOrWhiteSpace(lab.Descricao))
+                {
+                    <div class="text-secondary small mb-3 p-3 bg-light rounded-3 border" style="white-space: pre-line; line-height: 1.6;">
+                        @lab.Descricao
+                    </div>
+                }
+
+                @if (instancia == null)
+                {
+                    @if (!Model.DockerDisponivel)
+                    {
+                        <div class="alert alert-warning border-0 rounded-3 small mb-3 d-flex align-items-center gap-3">
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-4 flex-shrink-0"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark">Docker Desktop Offline</div>
+                                <div class="text-secondary">O Docker Desktop precisa estar aberto no seu computador para criar o container do alvo vulnerável. Abra o aplicativo <strong>Docker Desktop</strong> e aguarde o ícone da baleia carregar na barra de tarefas.</div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Laboratório Parado: Botão de Iniciar -->
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <i class="bi bi-box-seam fs-4"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark small">Ambiente Ofensivo Isolado</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">Imagem Docker: <code>@lab.ImagemDocker</code></div>
+                            </div>
+                        </div>
+
+                        <form method="post" asp-page-handler="IniciarLab" asp-route-id="@Model.AulaAtual.Id" asp-route-labId="@lab.Id">
+                            <button type="submit" class="btn btn-success px-4 py-2 rounded-pill fw-bold shadow-sm d-flex align-items-center gap-2">
+                                <i class="bi bi-play-circle-fill fs-5"></i> Iniciar Laboratório
+                            </button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <!-- Laboratório em Execução Ativo -->
+                    <div class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary border-opacity-25 mb-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                                <span class="fw-bold text-dark">Alvo Ativo em Execução</span>
+                                <span class="badge bg-dark rounded-pill">Container: @instancia.ContainerId</span>
+                            </div>
+
+                            <!-- Cronômetro Regressivo -->
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="text-muted small">Tempo restante:</div>
+                                <span id="labTimerBadge" class="badge bg-warning text-dark fs-6 px-3 py-1 rounded-pill fw-bold" data-segundos="@instancia.SegundosRestantes">
+                                    --:--
+                                </span>
+
+                                <form method="post" asp-page-handler="EstenderTempoLab" asp-route-id="@Model.AulaAtual.Id" asp-route-instanciaId="@instancia.Id" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-2 py-0" title="Adicionar +30 minutos">
+                                        <i class="bi bi-plus"></i> 30m
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Card com URL de Acesso ao Alvo -->
+                        <div class="bg-white p-3 rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <div class="text-muted small fw-semibold">Endereço do Alvo / Terminal:</div>
+                                <div class="fs-5 fw-bold text-primary font-monospace">http://localhost:@instancia.PortaHost</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="navigator.clipboard.writeText('http://localhost:@instancia.PortaHost'); alert('Endereço copiado!');">
+                                    <i class="bi bi-clipboard me-1"></i> Copiar
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold" onclick="document.getElementById('frameContainerLab').classList.toggle('d-none');">
+                                    <i class="bi bi-terminal me-1"></i> Terminal Embutido
+                                </button>
+                                <a href="http://localhost:@instancia.PortaHost" target="_blank" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> Abrir em Nova Aba
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Iframe do Laboratório / Terminal Embutido -->
+                        <div id="frameContainerLab" class="mb-3 d-none">
+                            <div class="d-flex justify-content-between align-items-center bg-dark text-white px-3 py-2 rounded-top small">
+                                <span><i class="bi bi-terminal-split text-success me-2"></i>Ambiente Hands-on em Execução (http://localhost:@instancia.PortaHost)</span>
+                                <button type="button" class="btn btn-sm btn-link text-white-50 p-0 text-decoration-none" onclick="document.getElementById('frameContainerLab').classList.add('d-none');">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <iframe src="http://localhost:@instancia.PortaHost" style="width: 100%; height: 480px; border: 2px solid #1e293b; border-radius: 0 0 12px 12px; background: #000;"></iframe>
+                        </div>
+
+                        <!-- Submissão de Flag CTF -->
+                        <form method="post" asp-page-handler="SubmeterFlag" asp-route-id="@Model.AulaAtual.Id" asp-route-instanciaId="@instancia.Id" class="mb-2">
+                            <label class="form-label small fw-bold text-dark mb-1">
+                                <i class="bi bi-flag-fill text-danger me-1"></i> Submissão de Flag (Capture The Flag):
+                            </label>
+                            <div class="input-group">
+                                <input type="text" asp-for="FlagSubmissao" class="form-control font-monospace" placeholder="DESEC{...} ou FLAG{...}" required />
+                                <button type="submit" class="btn btn-dark fw-semibold px-4">
+                                    <i class="bi bi-send-check me-1"></i> Submeter Flag
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="d-flex justify-content-end mt-3">
+                            <form method="post" asp-page-handler="PararLab" asp-route-id="@Model.AulaAtual.Id" asp-route-instanciaId="@instancia.Id" onsubmit="return confirm('Deseja realmente encerrar este laboratório agora e liberar os recursos?');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                    <i class="bi bi-stop-circle-fill me-1"></i> Encerrar Laboratório
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+
+                <!-- Pistas Progressivas (Hints) -->
+                @if (!string.IsNullOrWhiteSpace(lab.Pistas))
+                {
+                    var listaPistas = lab.Pistas.Split(new[] { "|||" }, StringSplitOptions.RemoveEmptyEntries);
+                    if (listaPistas.Length > 0)
+                    {
+                        <div class="mb-3">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePistas" aria-expanded="false">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i> Pistas & Dicas de Raciocínio (@listaPistas.Length)
+                            </button>
+
+                            <div class="collapse" id="collapsePistas">
+                                <div class="card card-body border bg-light rounded-3 p-3">
+                                    <div class="small text-muted mb-2"><i class="bi bi-info-circle me-1"></i>Revelar pistas não diminui sua pontuação de XP: use para orientar seu raciocínio caso trave na exploração.</div>
+                                    @for (int pIdx = 0; pIdx < listaPistas.Length; pIdx++)
+                                    {
+                                        var pistaTexto = listaPistas[pIdx].Trim();
+                                        <div class="p-2 mb-2 bg-white rounded border">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold text-dark small"><i class="bi bi-key-fill text-primary me-1"></i> Pista #@(pIdx + 1)</span>
+                                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-primary" onclick="document.getElementById('pista-@pIdx').classList.toggle('d-none'); this.classList.add('d-none');">
+                                                    Revelar Dica
+                                                </button>
+                                            </div>
+                                            <div id="pista-@pIdx" class="d-none mt-2 text-secondary small pt-2 border-top">
+                                                @pistaTexto
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <!-- Writeup Oficial & Relatório de Remediação -->
+                @if (!string.IsNullOrWhiteSpace(lab.Writeup))
+                {
+                    @if (isResolvido)
+                    {
+                        <div class="card border-success border-opacity-25 rounded-3 bg-success bg-opacity-10 p-3 mt-2">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                <div class="d-flex align-items-center gap-2 text-success fw-bold">
+                                    <i class="bi bi-unlock-fill fs-5"></i> WRITEUP & ANÁLISE TÉCNICA DE REMEDIAÇÃO
+                                </div>
+                                <span class="badge bg-success text-white rounded-pill px-3 py-1 small">Desbloqueado</span>
+                            </div>
+                            <div class="small text-dark" style="white-space: pre-line; line-height: 1.6;">
+                                @lab.Writeup
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card border-0 rounded-3 bg-light p-3 text-muted small d-flex flex-row align-items-center gap-2 mt-2">
+                            <i class="bi bi-lock-fill fs-5 text-secondary"></i>
+                            <div>
+                                <strong>Writeup e Análise de Remediação Bloqueados:</strong> Capture e submeta a flag correta acima para desbloquear o relatório técnico completo da anatomia da vulnerabilidade e como blindar o sistema.
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        <!-- Seção de Anotações Pessoais da Aula com Formatador de Comandos -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4 border-start border-4 border-info">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-journal-code fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">Meu Caderno de Anotações</h5>
+                        <span id="statusSalvoAnotacao" class="text-muted small">
+                            @(Model.MinhaAnotacao != null ? $"Última alteração salva em {Model.MinhaAnotacao.AtualizadoEm.ToLocalTime():dd/MM/yyyy HH:mm}" : "Suas anotações são privadas e salvas automaticamente.")
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="/Perfil/Anotacoes" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Consultar todas as anotações do curso">
+                        <i class="bi bi-collection me-1"></i> Ver Todas as Anotações
+                    </a>
+                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" onclick="exportarAnotacaoMd()" title="Baixar anotações desta aula em arquivo Markdown (.md)">
+                        <i class="bi bi-download me-1"></i> Exportar .md
+                    </button>
+                    <button type="button" id="btnSalvarAnotacao" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" onclick="salvarAnotacaoAjax(true)">
+                        <i class="bi bi-floppy-fill me-1"></i> Salvar (Ctrl+S)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Abas de Navegação: Escrever vs Visualizar Formatado -->
+            <ul class="nav nav-pills mb-3" id="pillsAnotacaoTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill px-3 py-1 small fw-semibold" id="pills-editar-tab" data-bs-toggle="pill" data-bs-target="#pills-editar" type="button" role="tab">
+                        <i class="bi bi-pencil-square me-1"></i> Escrever
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-3 py-1 small fw-semibold" id="pills-preview-tab" data-bs-toggle="pill" data-bs-target="#pills-preview" type="button" role="tab" onclick="renderizarPreviewAnotacao()">
+                        <i class="bi bi-eye-fill me-1"></i> Visualizar Formatado
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="pillsAnotacaoTabContent">
+                <!-- Aba Editar -->
+                <div class="tab-pane fade show active" id="pills-editar" role="tabpanel">
+                    <!-- Toolbar de Formatação Rápida (Comandos, Terminal, Alertas) -->
+                    <div class="d-flex flex-wrap gap-1 p-2 bg-light rounded-top border border-bottom-0 align-items-center">
+                        <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm" onclick="inserirFormatacao('**', '**', 'texto em negrito')" title="Negrito">
+                            <i class="bi bi-type-bold"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm" onclick="inserirFormatacao('*', '*', 'texto em itálico')" title="Itálico">
+                            <i class="bi bi-type-italic"></i>
+                        </button>
+                        <div class="vr mx-1"></div>
+                        <button type="button" class="btn btn-sm btn-dark px-2 py-1 font-monospace shadow-sm" onclick="inserirFormatacao('`', '`', 'nmap -sS -p 80 target')" title="Comando Inline (ex: `comando`)">
+                            <i class="bi bi-terminal me-1 text-warning"></i> `Comando`
+                        </button>
+                        <button type="button" class="btn btn-sm btn-dark px-2 py-1 font-monospace shadow-sm" onclick="inserirBlocoTerminal()" title="Bloco de Terminal Linux">
+                            <i class="bi bi-terminal-split me-1 text-success"></i> Bloco Terminal
+                        </button>
+                        <div class="vr mx-1"></div>
+                        <button type="button" class="btn btn-sm btn-white border px-2 py-1 text-primary shadow-sm" onclick="inserirCallout()" title="Caixa de Dica / Observação">
+                            <i class="bi bi-lightbulb-fill text-warning me-1"></i> [Dica/Nota]
+                        </button>
+                        <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm" onclick="inserirLista()" title="Lista de Marcadores">
+                            <i class="bi bi-list-ul"></i>
+                        </button>
+                    </div>
+
+                    <textarea id="txtAnotacao" class="form-control rounded-bottom font-monospace" rows="8" placeholder="Escreva suas anotações aqui... Use a barra acima para formatar comandos, payloads e dicas de exploração!" style="font-size: 0.9rem; line-height: 1.6; border-top-left-radius: 0; border-top-right-radius: 0;">@Model.ConteudoAnotacao</textarea>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-2 text-muted small">
+                        <span><i class="bi bi-keyboard me-1"></i>Pressione <code>Ctrl + S</code> para salvar sem pausar seus estudos.</span>
+                        <span id="charCountAnotacao">@((Model.ConteudoAnotacao ?? "").Length) caracteres</span>
+                    </div>
+                </div>
+
+                <!-- Aba Preview Formatado -->
+                <div class="tab-pane fade" id="pills-preview" role="tabpanel">
+                    <div id="previewAnotacaoBox" class="p-3 bg-light rounded-3 border" style="min-height: 200px; line-height: 1.7;">
+                        <span class="text-muted fst-italic">Nenhuma anotação registrada ainda.</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -258,11 +603,25 @@
                         {
                             string accordionId = "collapse" + moduloIndex;
                             bool isModuloAtual = modulo.Id == Model.AulaAtual.ModuloId;
+                            var moduloAulas = modulo.Aulas.ToList();
+                            bool isModuloConcluido = moduloAulas.Count > 0 && moduloAulas.All(a => Model.AulasConcluidasIds.Contains(a.Id));
 
                             <div class="accordion-item border-bottom">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button @(isModuloAtual ? "" : "collapsed") fw-bold bg-light text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#@accordionId" style="font-size: 0.95rem;">
-                                        @modulo.Ordem. @modulo.Titulo
+                                    <button class="accordion-button @(isModuloAtual ? "" : "collapsed") fw-bold bg-light text-dark d-flex align-items-center justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#@accordionId" style="font-size: 0.95rem;">
+                                        <div class="d-flex align-items-center gap-2 flex-grow-1 pe-2">
+                                            @if (isModuloConcluido)
+                                            {
+                                                <i class="bi bi-patch-check-fill text-success" title="Módulo 100% Concluído!"></i>
+                                            }
+                                            <span>@modulo.Ordem. @modulo.Titulo</span>
+                                        </div>
+                                        @if (isModuloConcluido)
+                                        {
+                                            <span class="badge bg-warning text-dark rounded-pill me-2 px-2 py-1 small shadow-xs" title="Badge de Módulo Desbloqueado!">
+                                                <i class="bi bi-award-fill"></i> Concluído
+                                            </span>
+                                        }
                                     </button>
                                 </h2>
                                 <div id="@accordionId" class="accordion-collapse collapse @(isModuloAtual ? "show" : "")" data-bs-parent="#accordionModulos">
@@ -310,6 +669,67 @@
     @Html.AntiForgeryToken()
 </form>
 
+<!-- Modal Celebratório de Módulo Concluído e Badge Desbloqueado -->
+<div class="modal fade" id="modalModuloConcluido" tabindex="-1" aria-labelledby="modalModuloConcluidoLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden text-center position-relative" style="background: var(--app-surface, #ffffff);">
+            <canvas id="canvasConfetti" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style="pointer-events: none; z-index: 10;"></canvas>
+            
+            <div class="modal-header border-0 pb-0 justify-content-end position-relative" style="z-index: 11;">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body px-4 pt-0 pb-4 position-relative" style="z-index: 11;">
+                <div class="mb-3 position-relative d-inline-block">
+                    <div id="modalBadgeIconContainer" class="rounded-circle shadow-lg d-flex align-items-center justify-content-center mx-auto" style="width: 110px; height: 110px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; transition: all 0.3s ease;">
+                        <i id="modalBadgeIcon" class="bi @(TempData["BadgeIcone"] ?? "bi-trophy-fill")" style="font-size: 3.2rem;"></i>
+                    </div>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm px-2 py-1">
+                        NOVA CONQUISTA!
+                    </span>
+                </div>
+
+                <h6 class="text-uppercase fw-bold text-warning letter-spacing-1 mb-1" style="font-size: 0.8rem; letter-spacing: 1.5px;">
+                    Módulo 100% Concluído
+                </h6>
+                <h3 id="modalBadgeTitulo" class="fw-bold text-dark mb-2">
+                    @(TempData["BadgeTitulo"] ?? "Mestre do Módulo")
+                </h3>
+                <p id="modalBadgeDescricao" class="text-secondary small mb-3 px-2">
+                    @(TempData["BadgeDescricao"] ?? "Parabéns! Você completou com êxito todas as aulas e garantiu um novo emblema oficial.")
+                </p>
+
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <span class="badge bg-primary bg-opacity-10 text-primary fs-6 px-3 py-2 rounded-pill fw-bold border border-primary border-opacity-25">
+                        <i class="bi bi-stars text-warning me-1"></i> +<span id="modalBadgeXp">@(TempData["BadgeXp"] ?? "100")</span> XP
+                    </span>
+                    <span id="modalNivelBadge" class="badge bg-success bg-opacity-10 text-success fs-6 px-3 py-2 rounded-pill fw-bold border border-success border-opacity-25 @(TempData["SubiuDeNivel"] is true ? "" : "d-none")">
+                        <i class="bi bi-arrow-up-circle-fill me-1"></i> Nova Patente! Nível <span id="modalNivelNum">@(TempData["Nivel"] ?? "")</span>
+                    </span>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 border mb-4 text-start small">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-secondary">Módulo:</span>
+                        <span id="modalModuloNome" class="fw-bold text-dark text-truncate ms-2" style="max-width: 280px;">@(TempData["ModuloConcluidoNome"] ?? "")</span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    @if (Model.ProximaAula != null)
+                    {
+                        <a href="/Aulas/Assistir?id=@Model.ProximaAula.Id" id="btnModalAvancar" class="btn btn-primary rounded-pill py-2 fw-semibold shadow-sm">
+                            <i class="bi bi-rocket-takeoff-fill me-1"></i> Ir para Próxima Aula <span id="modalContadorSegundos" class="fw-bold"></span>
+                        </a>
+                    }
+                    <button type="button" class="btn btn-outline-secondary rounded-pill py-2 fw-semibold" data-bs-dismiss="modal" onclick="cancelarAutoAvanco()">
+                        Continuar Neste Módulo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const video = document.getElementById("playerPrincipal");
     const toggleAutoAvancar = document.getElementById("toggleAutoAvancar");
@@ -333,28 +753,150 @@
         }
     });
 
+    function exibirModalConquista(nomeModulo, titulo, descricao, icone, cor, xp, subiuDeNivel, nivel) {
+        if (nomeModulo) document.getElementById('modalModuloNome').textContent = nomeModulo;
+        if (titulo) document.getElementById('modalBadgeTitulo').textContent = titulo;
+        if (descricao) document.getElementById('modalBadgeDescricao').textContent = descricao;
+        if (xp) document.getElementById('modalBadgeXp').textContent = xp;
+        
+        const iconElem = document.getElementById('modalBadgeIcon');
+        if (iconElem && icone) {
+            iconElem.className = `bi ${icone}`;
+        }
+
+        const iconContainer = document.getElementById('modalBadgeIconContainer');
+        if (iconContainer && cor) {
+            iconContainer.style.background = `linear-gradient(135deg, ${cor}, #1f2937)`;
+        }
+
+        const nivelBadge = document.getElementById('modalNivelBadge');
+        const nivelNum = document.getElementById('modalNivelNum');
+        if (subiuDeNivel && nivelBadge && nivelNum) {
+            nivelNum.textContent = nivel;
+            nivelBadge.classList.remove('d-none');
+        }
+
+        const modalEl = document.getElementById('modalModuloConcluido');
+        if (modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            dispararConfetes();
+        }
+    }
+
+    // Se houve conclusão via POST tradicional e TempData foi preenchido
+    @if (TempData["ModuloConcluidoNome"] != null)
+    {
+        <text>
+        document.addEventListener("DOMContentLoaded", function() {
+            const modalEl = document.getElementById('modalModuloConcluido');
+            if (modalEl) {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                dispararConfetes();
+                if (proximaAulaUrl) {
+                    iniciarContagemAutoAvanco();
+                }
+            }
+        });
+        </text>
+    }
+
+    // Listener para cancelar contagem se o modal for fechado no 'X'
+    document.addEventListener("DOMContentLoaded", function() {
+        const modalEl = document.getElementById('modalModuloConcluido');
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                cancelarAutoAvanco();
+            });
+        }
+    });
+
     function marcarAulaConcluidaAjax() {
         const tokenInput = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]');
         const token = tokenInput ? tokenInput.value : '';
 
-        fetch(`?handler=MarcarConcluidaAjax&id=${aulaAtualId}`, {
+        return fetch(`?handler=MarcarConcluidaAjax&id=${aulaAtualId}`, {
             method: "POST",
             headers: {
                 "RequestVerificationToken": token,
                 "Content-Type": "application/x-www-form-urlencoded"
             }
-        }).catch(e => console.error("Erro ao registrar conclusão automática:", e));
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.moduloConcluido && data.badge) {
+                exibirModalConquista(
+                    data.nomeModulo,
+                    data.badge.titulo,
+                    data.badge.descricao,
+                    data.badge.icone,
+                    data.badge.cor,
+                    data.badge.xp,
+                    data.subiuDeNivel,
+                    data.nivel
+                );
+            }
+            return data;
+        })
+        .catch(e => {
+            console.error("Erro ao registrar conclusão:", e);
+            throw e;
+        });
+    }
+
+    // Disparo manual pelo botão 'Marcar Concluída' -> Avança em 5 segundos
+    function marcarAulaConcluidaManual(btn) {
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Concluindo...';
+        }
+
+        marcarAulaConcluidaAjax().then(data => {
+            if (btn) {
+                btn.className = "badge bg-success bg-opacity-10 text-success px-3 py-2 fw-semibold rounded-pill border-0";
+                btn.style.fontSize = "0.85rem";
+                btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Concluída (+15 XP)';
+            }
+
+            // Atualiza ícone de check na lista lateral de aulas
+            const itemLateral = document.querySelector(`.list-group-item[href*="id=${aulaAtualId}"]`);
+            if (itemLateral) {
+                const rightContainer = itemLateral.querySelector('.d-flex.align-items-center.gap-2');
+                if (rightContainer && !rightContainer.querySelector('.bi-check-circle-fill')) {
+                    const iconCheck = document.createElement('i');
+                    iconCheck.className = 'bi bi-check-circle-fill text-success';
+                    iconCheck.style.fontSize = '0.95rem';
+                    rightContainer.prepend(iconCheck);
+                }
+            }
+
+            // Inicia a contagem regressiva de 5 segundos para a próxima aula
+            if (proximaAulaUrl) {
+                iniciarContagemAutoAvanco();
+                if (countdownOverlay && (!data || !data.moduloConcluido)) {
+                    countdownOverlay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                alert("🎉 Parabéns! Você concluiu todas as aulas do curso!");
+            }
+        }).catch(err => {
+            console.error("Erro ao marcar aula:", err);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Marcar Concluída';
+            }
+        });
     }
 
     if (video) {
         video.addEventListener("ended", function () {
-            // Marca a aula como concluída automaticamente
-            marcarAulaConcluidaAjax();
-
-            // Se auto-avanço estiver ativado e houver próxima aula, inicia contagem de 5s
-            if (toggleAutoAvancar.checked && proximaAulaUrl) {
-                iniciarContagemAutoAvanco();
-            }
+            // Marca a aula como concluída automaticamente ao fim do vídeo
+            marcarAulaConcluidaAjax().then(data => {
+                if (toggleAutoAvancar.checked && proximaAulaUrl) {
+                    iniciarContagemAutoAvanco();
+                }
+            });
         });
     }
 
@@ -362,6 +904,8 @@
         if (!proximaAulaUrl) return;
         segundosRestantes = 5;
         if (contadorSegundos) contadorSegundos.innerText = segundosRestantes;
+        const modalContador = document.getElementById("modalContadorSegundos");
+        if (modalContador) modalContador.innerText = `(${segundosRestantes}s)`;
         if (countdownOverlay) countdownOverlay.style.display = "block";
 
         if (timerInterval) clearInterval(timerInterval);
@@ -369,6 +913,7 @@
         timerInterval = setInterval(() => {
             segundosRestantes--;
             if (contadorSegundos) contadorSegundos.innerText = segundosRestantes;
+            if (modalContador) modalContador.innerText = `(${segundosRestantes}s)`;
             if (segundosRestantes <= 0) {
                 clearInterval(timerInterval);
                 window.location.href = proximaAulaUrl;
@@ -384,5 +929,328 @@
         if (countdownOverlay) {
             countdownOverlay.style.display = "none";
         }
+        const modalContador = document.getElementById("modalContadorSegundos");
+        if (modalContador) modalContador.innerText = "";
+    }
+
+    // Cronômetro do Laboratório Docker
+    const labTimerBadge = document.getElementById('labTimerBadge');
+    if (labTimerBadge) {
+        let segundosLab = parseInt(labTimerBadge.getAttribute('data-segundos')) || 0;
+        function updateLabTimer() {
+            if (segundosLab <= 0) {
+                labTimerBadge.textContent = 'Tempo Esgotado';
+                labTimerBadge.className = 'badge bg-danger text-white fs-6 px-3 py-1 rounded-pill fw-bold';
+                return;
+            }
+            const m = Math.floor(segundosLab / 60);
+            const s = segundosLab % 60;
+            labTimerBadge.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            segundosLab--;
+            setTimeout(updateLabTimer, 1000);
+        }
+        updateLabTimer();
+    }
+
+    // Efeito Visual de Confetes em Canvas Puro (Zero dependências externas)
+    function dispararConfetes() {
+        const canvas = document.getElementById('canvasConfetti');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.parentElement.offsetWidth || 500;
+        canvas.height = canvas.parentElement.offsetHeight || 500;
+
+        const pieces = [];
+        const colors = ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6', '#ef4444'];
+        for (let i = 0; i < 70; i++) {
+            pieces.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * -canvas.height,
+                size: Math.random() * 8 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1,
+                rotation: Math.random() * 360,
+                rotSpeed: Math.random() * 6 - 3
+            });
+        }
+
+        let animationFrame;
+        let frameCount = 0;
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+
+            pieces.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotSpeed;
+
+                if (p.y < canvas.height) active = true;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+            });
+
+            frameCount++;
+            if (active && frameCount < 180) {
+                animationFrame = requestAnimationFrame(render);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        render();
+    }
+
+    // ==========================================
+    // CADERNO DE ANOTAÇÕES & FORMATADOR OFENSIVO
+    // ==========================================
+    const txtAnotacao = document.getElementById("txtAnotacao");
+    const charCountAnotacao = document.getElementById("charCountAnotacao");
+    const statusSalvoAnotacao = document.getElementById("statusSalvoAnotacao");
+    const btnSalvarAnotacao = document.getElementById("btnSalvarAnotacao");
+    let autoSaveTimeout = null;
+
+    if (txtAnotacao) {
+        txtAnotacao.addEventListener("input", function() {
+            if (charCountAnotacao) {
+                charCountAnotacao.innerText = this.value.length + " caracteres";
+            }
+            if (statusSalvoAnotacao) {
+                statusSalvoAnotacao.innerHTML = '<span class="text-warning"><i class="bi bi-pencil me-1"></i>Alterações não salvas...</span>';
+            }
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                salvarAnotacaoAjax(false);
+            }, 3500);
+        });
+    }
+
+    // Atalho global de teclado: Ctrl + S para salvar sem pausar estudos
+    document.addEventListener("keydown", function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+            e.preventDefault();
+            salvarAnotacaoAjax(true);
+        }
+    });
+
+    function salvarAnotacaoAjax(exibirFeedback) {
+        if (!txtAnotacao) return;
+        const tokenInput = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        if (btnSalvarAnotacao && exibirFeedback) {
+            btnSalvarAnotacao.disabled = true;
+            btnSalvarAnotacao.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Salvando...';
+        }
+
+        fetch(`?handler=SalvarAnotacaoAjax&id=${aulaAtualId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "RequestVerificationToken": token
+            },
+            body: JSON.stringify({ conteudo: txtAnotacao.value })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (statusSalvoAnotacao && data.atualizadoEm) {
+                statusSalvoAnotacao.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Salvo com sucesso às ${data.atualizadoEm}</span>`;
+            }
+            if (btnSalvarAnotacao && exibirFeedback) {
+                btnSalvarAnotacao.innerHTML = '<i class="bi bi-check-lg me-1"></i> Salvo!';
+                btnSalvarAnotacao.className = "btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-sm";
+                setTimeout(() => {
+                    btnSalvarAnotacao.disabled = false;
+                    btnSalvarAnotacao.innerHTML = '<i class="bi bi-floppy-fill me-1"></i> Salvar (Ctrl+S)';
+                    btnSalvarAnotacao.className = "btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm";
+                }, 2000);
+            }
+        })
+        .catch(err => {
+            console.error("Erro ao salvar anotação:", err);
+            if (statusSalvoAnotacao) {
+                statusSalvoAnotacao.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-octagon-fill me-1"></i>Erro ao salvar anotação.</span>';
+            }
+            if (btnSalvarAnotacao && exibirFeedback) {
+                btnSalvarAnotacao.disabled = false;
+                btnSalvarAnotacao.innerHTML = '<i class="bi bi-floppy-fill me-1"></i> Salvar (Ctrl+S)';
+            }
+        });
+    }
+
+    function inserirFormatacao(before, after, defaultText) {
+        if (!txtAnotacao) return;
+        const start = txtAnotacao.selectionStart;
+        const end = txtAnotacao.selectionEnd;
+        const text = txtAnotacao.value;
+
+        let selectedText = text.substring(start, end);
+        if (!selectedText) {
+            selectedText = defaultText;
+        }
+
+        const replacement = before + selectedText + after;
+        txtAnotacao.value = text.substring(0, start) + replacement + text.substring(end);
+        txtAnotacao.focus();
+        txtAnotacao.selectionStart = start + before.length;
+        txtAnotacao.selectionEnd = start + before.length + selectedText.length;
+
+        if (charCountAnotacao) charCountAnotacao.innerText = txtAnotacao.value.length + " caracteres";
+        if (statusSalvoAnotacao) {
+            statusSalvoAnotacao.innerHTML = '<span class="text-warning"><i class="bi bi-pencil me-1"></i>Alterações não salvas...</span>';
+        }
+    }
+
+    function inserirBlocoTerminal() {
+        const template = "```bash\n# Executar scan com enumeração de scripts e serviços\nnmap -sV -sC -Pn 10.10.10.10\n```\n";
+        inserirFormatacao(template, "", "");
+    }
+
+    function inserirCallout() {
+        const template = "> [!NOTA]\n> Atenção: Registre aqui parâmetros de teste, payloads ou flags importantes.\n\n";
+        inserirFormatacao(template, "", "");
+    }
+
+    function inserirLista() {
+        const template = "- Passo 1: Reconhecimento de portas\n- Passo 2: Enumeração de vulnerabilidades\n- Passo 3: Exploração e captura de flag\n";
+        inserirFormatacao(template, "", "");
+    }
+
+    function exportarAnotacaoMd() {
+        if (!txtAnotacao) return;
+        const conteudo = txtAnotacao.value;
+        if (!conteudo.trim()) {
+            alert("Não há anotações para exportar nesta aula.");
+            return;
+        }
+        const blob = new Blob([conteudo], { type: "text/markdown;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Anotacoes_Aula_${aulaAtualId}.md`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function renderizarPreviewAnotacao() {
+        const previewBox = document.getElementById("previewAnotacaoBox");
+        if (!previewBox || !txtAnotacao) return;
+
+        const raw = txtAnotacao.value;
+        if (!raw.trim()) {
+            previewBox.innerHTML = '<span class="text-muted fst-italic"><i class="bi bi-journal-x me-1"></i>Nenhuma anotação registrada ainda. Use a aba "Escrever" para tomar notas.</span>';
+            return;
+        }
+
+        let html = escapeHtml(raw);
+
+        // 1. Terminal Blocks (```lang ... ```)
+        html = html.replace(/```([a-zA-Z0-9_\-\+]*)\n([\s\S]*?)```/g, function(match, lang, code) {
+            const displayLang = (lang || 'bash').trim().toLowerCase();
+            const codeClean = code.trim();
+            return `
+                <div class="my-3 rounded-3 overflow-hidden border border-secondary shadow-sm" style="background-color: #0f172a;">
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-dark bg-opacity-75 border-bottom border-secondary text-light small">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rounded-circle bg-danger d-inline-block" style="width: 10px; height: 10px;"></span>
+                            <span class="rounded-circle bg-warning d-inline-block" style="width: 10px; height: 10px;"></span>
+                            <span class="rounded-circle bg-success d-inline-block" style="width: 10px; height: 10px;"></span>
+                            <span class="ms-2 font-monospace text-muted small"><i class="bi bi-terminal-fill me-1 text-success"></i>${displayLang}</span>
+                        </div>
+                        <button type="button" class="btn btn-xs btn-outline-light py-0 px-2 rounded font-monospace" onclick="copiarComandoTerminal(this)" style="font-size: 0.75rem;">
+                            <i class="bi bi-clipboard me-1"></i>Copiar
+                        </button>
+                    </div>
+                    <pre class="m-0 p-3 text-light font-monospace" style="font-size: 0.88rem; overflow-x: auto; background: transparent;"><code class="text-success">${codeClean}</code></pre>
+                </div>
+            `;
+        });
+
+        // 2. Comandos inline `comando`
+        html = html.replace(/`([^`\n]+)`/g, '<code class="bg-dark text-warning px-2 py-1 rounded font-monospace small border border-secondary">$1</code>');
+
+        // 3. Callouts > [!NOTA] ou > [!ATENÇÃO]
+        html = html.replace(/&gt;\s*\[!(NOTA|ATENCAO|ATENÇÃO|DICA|INFO)\]\s*\n((?:&gt;.*(?:\n|$))*)/gi, function(match, type, content) {
+            const cleanContent = content.replace(/&gt;\s?/g, '').trim();
+            const typeUp = type.toUpperCase();
+            let icon = "bi-lightbulb-fill text-warning";
+            let alertClass = "alert-warning border-warning";
+            if (typeUp.includes("ATEN")) {
+                icon = "bi-exclamation-triangle-fill text-danger";
+                alertClass = "alert-danger border-danger";
+            } else if (typeUp.includes("INFO") || typeUp.includes("DICA")) {
+                icon = "bi-info-circle-fill text-info";
+                alertClass = "alert-info border-info";
+            }
+            return `
+                <div class="alert ${alertClass} border-start border-4 rounded-3 p-3 my-3 shadow-xs">
+                    <div class="fw-bold mb-1 d-flex align-items-center gap-1">
+                        <i class="bi ${icon} me-1"></i> ${typeUp}
+                    </div>
+                    <div class="small" style="white-space: pre-line;">${cleanContent}</div>
+                </div>
+            `;
+        });
+
+        // 4. Blockquotes comuns
+        html = html.replace(/(?:^|\n)&gt;\s?(.*?)(?=\n|$)/g, '\n<blockquote class="border-start border-3 border-primary ps-3 text-secondary my-2 fst-italic">$1</blockquote>');
+
+        // 5. Títulos
+        html = html.replace(/^###\s+(.*?)$/gm, '<h5 class="fw-bold text-dark mt-3 mb-2">$1</h5>');
+        html = html.replace(/^##\s+(.*?)$/gm, '<h4 class="fw-bold text-dark mt-4 mb-2 pb-1 border-bottom">$1</h4>');
+        html = html.replace(/^#\s+(.*?)$/gm, '<h3 class="fw-bold text-dark mt-4 mb-3">$1</h3>');
+
+        // 6. Negrito e Itálico
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-dark">$1</strong>');
+        html = html.replace(/\*([^*]+)\*/g, '<em class="text-secondary">$1</em>');
+
+        // 7. Listas
+        html = html.replace(/(?:^|\n)-\s+(.*?)(?=\n|$)/g, '\n<li class="ms-3 text-secondary">$1</li>');
+
+        // 8. Espaçamento
+        html = html.replace(/\n\n+/g, '<div class="my-2"></div>');
+        html = html.replace(/\n(?![<\s])/g, '<br>');
+
+        previewBox.innerHTML = html;
+    }
+
+    function copiarComandoTerminal(btn) {
+        const container = btn.closest('.my-3');
+        if (!container) return;
+        const code = container.querySelector('code');
+        if (!code) return;
+
+        const texto = code.innerText;
+        navigator.clipboard.writeText(texto).then(() => {
+            const originalHtml = btn.innerHTML;
+            btn.className = "btn btn-xs btn-success py-0 px-2 rounded font-monospace";
+            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copiado!';
+            setTimeout(() => {
+                btn.className = "btn btn-xs btn-outline-light py-0 px-2 rounded font-monospace";
+                btn.innerHTML = originalHtml;
+            }, 2000);
+        }).catch(err => {
+            console.error("Erro ao copiar comando:", err);
+        });
     }
 </script>

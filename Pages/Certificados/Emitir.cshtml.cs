@@ -34,7 +34,7 @@ public class EmitirModel : PageModel
         Curso = await _context.Cursos
             .Include(c => c.Modulos)
             .ThenInclude(m => m.Aulas)
-            .FirstOrDefaultAsync(c => c.Id == cursoId);
+            .FirstOrDefaultAsync(c => c.Id == cursoId) ?? null!;
 
         if (Curso == null) return NotFound("Curso não encontrado.");
 

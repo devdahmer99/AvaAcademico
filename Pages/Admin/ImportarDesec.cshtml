@@ -1,0 +1,98 @@
+@page
+@model AvaAcademico.Pages.Admin.ImportarDesecModel
+@{
+    ViewData["Title"] = "Importar Formação Desec Pentest Profissional";
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">
+            <i class="bi bi-folder-symlink-fill text-primary me-2"></i>Importador Automatizado do Curso Desec
+        </h2>
+        <p class="text-muted mb-0 small">
+            Carregue automaticamente os 43 módulos e 501 aulas de vídeo sem duplicação de espaço em disco e com laboratórios Docker vinculados.
+        </p>
+    </div>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["MensagemErro"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["MensagemErro"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+            <h5 class="fw-bold text-dark mb-3">Diretório de Origem Detectado</h5>
+
+            <form method="post" asp-page-handler="Importar">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Caminho da Pasta no Computador:</label>
+                    <input type="text" asp-for="CaminhoDiretorio" class="form-control font-monospace" style="font-size: 0.85rem;" readonly />
+                </div>
+
+                <!-- Cards de Métricas Detectadas -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border text-center">
+                            <div class="fs-4 fw-bold text-primary">@Model.TotalModulosDetectados</div>
+                            <div class="text-muted small">Módulos Estruturados</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border text-center">
+                            <div class="fs-4 fw-bold text-success">@Model.TotalAulasDetectadas</div>
+                            <div class="text-muted small">Aulas em Vídeo (.mp4)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border text-center">
+                            <div class="fs-4 fw-bold text-dark">@Model.TamanhoTotalGB GB</div>
+                            <div class="text-muted small">Volume Total de Mídia</div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.CursoJaImportado != null)
+                {
+                    <div class="alert alert-info border-0 rounded-3 small mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i> Este curso já consta no banco de dados com <strong>@Model.CursoJaImportado.Modulos.Count módulos</strong> e <strong>@Model.CursoJaImportado.Modulos.SelectMany(m => m.Aulas).Count() aulas</strong>. Caso clique novamente, o sistema apenas adicionará novos itens sem duplicar os existentes.
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="/Admin/Dashboard" class="btn btn-light rounded-pill px-4">Voltar</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" @(Model.DiretorioExiste ? "" : "disabled")>
+                        <i class="bi bi-cloud-arrow-down-fill fs-5"></i> Iniciar Importação Automática
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+            <h6 class="fw-bold text-dark mb-3">
+                <i class="bi bi-stars text-warning me-2"></i>Vantagens Desta Importação
+            </h6>
+            <ul class="text-secondary small ps-3 mb-0" style="line-height: 1.8;">
+                <li><strong>Zero Duplicação de Disco</strong>: O streaming lê os vídeos direto da sua pasta Downloads, economizando 21 GB no HD/SSD.</li>
+                <li><strong>Organização Perfeita</strong>: Preserva a numeração original (01 a 43) dos módulos e sequenciamento das 501 aulas.</li>
+                <li><strong>Laboratórios Automáticos</strong>: Já cria laboratórios práticos com Docker em módulos-chave (Linux, Scanning e Web Hacking).</li>
+                <li><strong>Matrícula Instantânea</strong>: O aluno <strong>Eduardo Dahmer Correa</strong> já tem acesso liberado imediatamente.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+

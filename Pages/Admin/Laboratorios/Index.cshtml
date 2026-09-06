@@ -1,0 +1,177 @@
+@page
+@model AvaAcademico.Pages.Admin.Laboratorios.IndexModel
+@{
+    ViewData["Title"] = "Gestão de Laboratórios Hands-on (Docker)";
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold text-dark mb-1" style="font-size: 1.5rem;">
+            <i class="bi bi-cpu-fill text-primary me-2"></i>Gestão de Laboratórios Virtuais (Docker)
+        </h2>
+        <p class="text-muted mb-0 small">
+            Configure ambientes vulneráveis práticos e desafios CTF associados às aulas e módulos.
+        </p>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        @if (Model.DockerAtivo)
+        {
+            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fw-semibold">
+                <i class="bi bi-check-circle-fill me-1"></i> Docker Engine Conectado
+            </span>
+        }
+        else
+        {
+            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2 fw-semibold" title="Inicie o Docker Desktop">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> Docker Offline
+            </span>
+        }
+
+        <a href="/Admin/Laboratorios/Criar" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+            <i class="bi bi-plus-lg me-1"></i> Novo Laboratório
+        </a>
+    </div>
+</div>
+
+@if (TempData["MensagemSucesso"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Containers em Execução em Tempo Real -->
+@if (Model.InstanciasAtivas.Any())
+{
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4 border-start border-4 border-success">
+        <h5 class="fw-bold text-dark mb-3">
+            <span class="spinner-grow spinner-grow-sm text-success me-2" role="status"></span>
+            Containers Ativos no Momento (@Model.InstanciasAtivas.Count)
+        </h5>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Aluno</th>
+                        <th>Laboratório</th>
+                        <th>Container ID</th>
+                        <th>Porta Host</th>
+                        <th>Iniciado</th>
+                        <th>Expira em</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var inst in Model.InstanciasAtivas)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@(inst.Usuario.NomeCompleto ?? inst.Usuario.UserName)</td>
+                            <td>@inst.Laboratorio.Titulo</td>
+                            <td><code>@inst.ContainerId</code></td>
+                            <td><span class="badge bg-primary">Porta @inst.PortaHost</span></td>
+                            <td class="small text-muted">@inst.IniciadoEm.ToLocalTime().ToString("HH:mm:ss")</td>
+                            <td class="small text-muted">@inst.ExpiraEm.ToLocalTime().ToString("HH:mm:ss")</td>
+                            <td class="text-end">
+                                <a href="http://localhost:@inst.PortaHost" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1" title="Testar Acesso">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                                <form method="post" asp-page-handler="PararInstancia" asp-route-instanciaId="@inst.Id" class="d-inline" onsubmit="return confirm('Deseja forçar o desligamento deste container?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Parar Container">
+                                        <i class="bi bi-stop-fill"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- Tabela de Laboratórios Cadastrados -->
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+    <h5 class="fw-bold text-dark mb-3">Laboratórios Configurados (@Model.Laboratorios.Count)</h5>
+
+    @if (!Model.Laboratorios.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-cpu fs-1 mb-2"></i>
+            <p>Nenhum laboratório cadastrado ainda.</p>
+            <a href="/Admin/Laboratorios/Criar" class="btn btn-primary btn-sm rounded-pill px-3">
+                Cadastrar Primeiro Laboratório
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Título</th>
+                        <th>Imagem Docker</th>
+                        <th>Porta Container</th>
+                        <th>Vínculo</th>
+                        <th>Pontos</th>
+                        <th>Limite</th>
+                        <th>Flag CTF</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var lab in Model.Laboratorios)
+                    {
+                        var resolvidosCount = lab.Instancias.Count(i => i.Resolvido);
+
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">@lab.Titulo</div>
+                                <div class="text-muted small">@resolvidosCount alunos resolveram</div>
+                            </td>
+                            <td><code>@lab.ImagemDocker</code></td>
+                            <td><span class="badge bg-light text-dark border">Porta @lab.PortaPadraoContainer</span></td>
+                            <td>
+                                @if (lab.Aula != null)
+                                {
+                                    <span class="badge bg-info bg-opacity-10 text-info">Aula: @lab.Aula.Titulo</span>
+                                }
+                                else if (lab.Modulo != null)
+                                {
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">Módulo: @lab.Modulo.Titulo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Geral</span>
+                                }
+                            </td>
+                            <td><span class="badge bg-warning text-dark">+@lab.Pontos XP</span></td>
+                            <td>@lab.TempoLimiteMinutos min</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(lab.Flag))
+                                {
+                                    <code class="text-success">@lab.Flag</code>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Sem flag</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <form method="post" asp-page-handler="Excluir" asp-route-id="@lab.Id" class="d-inline" onsubmit="return confirm('Deseja realmente excluir este laboratório?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+

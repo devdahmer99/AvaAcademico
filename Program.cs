@@ -59,7 +59,28 @@ builder.Services.Configure<FormOptions>(options =>
         options.MultipartBodyLengthLimit = 524288000;
     });
 
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.MaxRequestBodySize = 524288000; // 500MB no IIS InProcess
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// Serviços de Laboratório Prático e Docker
+builder.Services.AddScoped<AvaAcademico.Services.IDockerService, AvaAcademico.Services.DockerService>();
+builder.Services.AddHostedService<AvaAcademico.Services.LabCleanupBackgroundService>();
+
+// Serviços de Gamificação e Badges
+builder.Services.AddScoped<AvaAcademico.Services.IGamificacaoService, AvaAcademico.Services.GamificacaoService>();
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -68,9 +89,17 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        if (!app.Environment.IsDevelopment())
+        {
+            ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=604800");
+        }
+    }
+});
 app.UseRouting();
-
 
 app.UseAuthentication();
 app.UseAuthorization();
