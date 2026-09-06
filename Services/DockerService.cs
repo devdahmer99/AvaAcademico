@@ -22,11 +22,16 @@ public class DockerService : IDockerService
     {
         try
         {
-            var (exitCode, stdout, _) = await ExecutarComandoAsync("docker", "info --format \"{{.ServerVersion}}\"", 5000);
+            var (exitCode, stdout, stderr) = await ExecutarComandoAsync("docker", "info --format \"{{.ServerVersion}}\"", 5000);
+            if (exitCode != 0)
+            {
+                _logger.LogWarning("Docker info retornou exitCode {ExitCode}. StdErr: {StdErr}", exitCode, stderr);
+            }
             return exitCode == 0 && !string.IsNullOrWhiteSpace(stdout);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Exceção em IsDockerDisponivelAsync");
             return false;
         }
     }
@@ -311,6 +316,15 @@ public class DockerService : IDockerService
             UseShellExecute = false,
             CreateNoWindow = true
         };
+
+        // Sob IIS/LocalSystem, o perfil de usuário do sistema não tem a pasta .docker
+        // Injeta a pasta do usuário Eduar se existir para que o CLI do Docker encontre configurações/plugins
+        var homeUser = @"C:\Users\Eduar";
+        if (Directory.Exists(homeUser))
+        {
+            process.StartInfo.EnvironmentVariables["USERPROFILE"] = homeUser;
+            process.StartInfo.EnvironmentVariables["DOCKER_CONFIG"] = Path.Combine(homeUser, ".docker");
+        }
 
         try
         {

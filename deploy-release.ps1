@@ -182,8 +182,7 @@ try {
         Write-Host " -> Criando AppPool '$AppPoolName'..." -ForegroundColor Gray
         New-WebAppPool -Name $AppPoolName | Out-Null
     }
-    Set-ItemProperty "IIS:\AppPools\$AppPoolName" -Name "managedRuntimeVersion" -Value "" # No Managed Code
-    Set-ItemProperty "IIS:\AppPools\$AppPoolName" -Name "processModel.identityType" -Value 4 # ApplicationPoolIdentity
+    Set-ItemProperty "IIS:\AppPools\$AppPoolName" -Name "processModel.identityType" -Value 0 # LocalSystem (necessário para acesso ao Named Pipe do Docker Desktop)
 
     # 7.2 Cria ou Atualiza o Website
     if (-not (Test-Path "IIS:\Sites\$SiteName")) {
